@@ -1,6 +1,7 @@
 import requests
 import random
 import Tarot_database
+from flask import Flask, render_template, session, redirect, request
 
 
 class WrongNameError(Exception):
@@ -252,61 +253,49 @@ class User():
             print(card3.give_card())
 
 
-def main():
-    while True:
-        Tarot_database.create_table()
-        user_name = input("Print your name: ")
-        try:
-            if user_name.isdigit() or not user_name:
-                raise WrongNameError(user_name)
-        except WrongNameError as error:
-            print(error)
-        else:
-            break
+app = Flask(__name__)
+app.secret_key = "change_this_to_something_random"  # needed for session to work
 
-    while True:
-        gender = input("Print your gender (man/woman): ")
-        try:
-            if gender != "man" and gender != "woman":
-                raise WrongGenderError(gender)
-        except WrongGenderError as error:
-            print(error)
-        else:
-            break
+@app.route("/")
+def home():
+    if "user_name" not in session:
+        return render_template("login.html")
+    return render_template("index.html", card=None)
 
-    me = User(user_name, gender)
-    while True:
-        do_next = input("What do you want next? Print 1 - draw a past, 2 - draw a present, 3 - draw a future, 4 - draw an oracle, 5 - see my past, 6 - see my present, 7 - see my future, 8 - see all my oracles, 9 - end session: ", )
-        try:
-            if do_next != '1' and do_next != '2' and do_next != '3' and do_next != '4' and do_next != '5' and do_next != '6' and do_next != '7' and do_next != '8' and do_next != '9':
-                raise WrongDigitError(do_next)
-        except WrongDigitError as error:
-            print(error)
-        else:
-            if do_next == '1':
-                me.get_past()
-            if do_next == '2':
-                me.get_present()
-            if do_next == '3':
-                me.get_future()
-            if do_next == '4':
-                me.get_oracle()  
-            if do_next == '5':
-                me.my_past()
-            if do_next == '6':
-                me.my_present()
-            if do_next == '7':
-                me.my_future()
-            if do_next == '8':
-                me.my_oracle()                  
-            if do_next == '9':
-                print("Thank you for using us!")
-                break
-                    
+@app.route("/login", methods=["POST"])
+def login():
+    user_name = request.form["user_name"]
+    gender = request.form["gender"]
 
-main()
-# El = User("El", "man")
-# El.get_future()
-# El.get_future()
-# El.my_future()
+    if user_name.isdigit() or not user_name:
+        return "Invalid name, go back and try again."
+    if gender != "man" and gender != "woman":
+        return "Invalid gender, go back and try again."
+
+    session["user_name"] = user_name
+    session["gender"] = gender
+    return redirect("/")
+
+@app.route("/draw/<category>")
+def draw(category):
+    if "user_name" not in session:
+        return redirect("/")
+
+    me = User(session["user_name"], session["gender"])
+
+    if category == "past":
+        me.get_past()
+    elif category == "present":
+        me.get_present()
+    elif category == "future":
+        me.get_future()
+    else:
+        return "Unknown category."
+
+    latest_card = getattr(me, category)[-1]
+    return render_template("index.html", card=latest_card)
+
+if __name__ == "__main__":
+    Tarot_database.create_table()
+    app.run(debug=True)
 
