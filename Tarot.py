@@ -2,6 +2,7 @@ import requests
 import random
 import Tarot_database
 from flask import Flask, render_template, session, redirect, request
+import os
 
 
 class WrongNameError(Exception):
@@ -396,5 +397,5 @@ def history(category):
 
 if __name__ == "__main__":
     Tarot_database.create_table()
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
