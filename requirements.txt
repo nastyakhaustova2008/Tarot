@@ -1,3 +1,4 @@
 flask
 requests
 deep-translator
+python-dotenv
