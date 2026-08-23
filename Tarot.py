@@ -404,6 +404,21 @@ def home():
     return render_template("index.html", card=card, category=category, oracle=oracle, story=story)
 
 
+HOMOGLYPH_MAP = {
+    "а": "a", "е": "e", "о": "o", "с": "c", "р": "p",
+    "х": "x", "у": "y", "к": "k", "м": "m", "н": "h",
+    "т": "t", "і": "i", "ѕ": "s", "ј": "j",
+}
+
+def normalize_name(name):
+    name = name.strip().lower()
+    normalized = "".join(HOMOGLYPH_MAP.get(ch, ch) for ch in name)
+    words = normalized.split()
+    return " ".join(sorted(words))
+
+MICHAEL_KOT_NORMALIZED = normalize_name("Michael Kot")
+
+
 @app.route("/login", methods=["POST"])
 def login():
     user_name = request.form["user_name"].strip()
@@ -412,7 +427,7 @@ def login():
     if not user_name or user_name.isdigit():
         session["login_error"] = t("invalid_name")
         return redirect("/")
-    if user_name == "Michael Kot":
+    if normalize_name(user_name) == MICHAEL_KOT_NORMALIZED:
         session["login_error"] = t("michael_kot_msg")
         return redirect("/")
     if gender != "man" and gender != "woman":

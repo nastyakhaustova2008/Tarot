@@ -26,6 +26,7 @@ TRANSLATIONS = {
         "reversed": "reversed",
         "your": "your",
         "oracle_whispers": "oracle whispers",
+        "disclaimer": "Taro is a personal programming project made for entertainment only. It is not a real tarot service, and its predictions should not be taken as genuine guidance.",
     },
     "he": {
         "welcome": "ברוכים הבאים ל",
@@ -54,6 +55,7 @@ TRANSLATIONS = {
         "reversed": "הפוך",
         "your": "שלך",
         "oracle_whispers": "לחישות האורקל",
+        "disclaimer": "Taro הוא פרויקט תכנות אישי שנוצר לצורכי בידור בלבד. זהו לא שירות טארו אמיתי, ואין להתייחס לתחזיות כהכוונה אמיתית.",
     },
     "uk": {
         "welcome": "ласкаво просимо до",
@@ -82,5 +84,6 @@ TRANSLATIONS = {
         "reversed": "перевернуто",
         "your": "Ваше",
         "oracle_whispers": "шепіт оракула",
+        "disclaimer": "Taro — це особистий програмістський проєкт, створений лише для розваги. Це не справжній сервіс ворожіння, і його передбачення не варто сприймати як реальні поради.",
     },
 }
