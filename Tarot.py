@@ -6,7 +6,7 @@ import os
 from translations import TRANSLATIONS
 from deep_translator import GoogleTranslator
 from dotenv import load_dotenv
-import os
+from tarot_ai import generate_oracle_story
 
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -329,7 +329,12 @@ class User():
             self.future.append(card3)
             Tarot_database.save_reading(self.user_name, "future", card3.card_name, card3.meaning, card3.orientation)
             Tarot_database.limit_readings(self.user_name, "future", 30)
-            print(card3.give_card())
+            story = generate_oracle_story(card1.meaning, card2.meaning, card3.meaning)
+            self.last_story = story
+            if story:
+                print(story)
+            else:
+                print("The mists are unclear right now — try your oracle reading again shortly.")
 
 
 app = Flask(__name__)
@@ -353,7 +358,7 @@ def translate_meaning(text, lang):
         return _translation_cache[cache_key]
     try:
         target = LANG_CODE_MAP.get(lang, lang)
-        translated = GoogleTranslator(source="en", target=target).translate(text)
+        translated = GoogleTranslator(source="auto", target=target).translate(text)
         _translation_cache[cache_key] = translated
         return translated
     except Exception:
@@ -373,8 +378,32 @@ def home():
     if "user_name" not in session:
         error = session.pop("login_error", None)
         return render_template("login.html", error=error)
-    return render_template("index.html", card=None)
 
+    card = session.get("last_card")
+    category = session.get("last_category")
+
+    oracle = None
+    if session.get("last_oracle"):
+        oracle = list(zip(session["last_oracle"], session["last_oracle_labels"]))
+
+    story = None
+    if session.get("last_oracle") and session.get("last_story_meanings"):
+        lang = session.get("lang", "en")
+        oracle_stories = session.get("oracle_stories") or {}
+
+        if oracle_stories.get(lang):
+            story = oracle_stories[lang]
+        else:
+            meanings = session["last_story_meanings"]
+            story = generate_oracle_story(
+                meanings["past"], meanings["present"], meanings["future"], lang=lang
+            )
+            oracle_stories[lang] = story
+            session["oracle_stories"] = oracle_stories
+
+    return render_template("index.html", card=card, category=category, oracle=oracle, story=story)
+
+    
 @app.route("/login", methods=["POST"])
 def login():
     user_name = request.form["user_name"].strip()
@@ -409,13 +438,46 @@ def draw(category):
     try:
         if category == "past":
             me.get_past()
-            return render_template("index.html", card=me.past[-1], category="Past")
+            card = me.past[-1]
+            session["last_card"] = {
+                "card_name": card.card_name,
+                "meaning": card.meaning,
+                "orientation": card.orientation,
+                "image_filename": card.image_filename,
+            }
+            session["last_category"] = "Past"
+            session["last_oracle"] = None
+            session["last_story_meanings"] = None
+            session["oracle_stories"] = None
+            return render_template("index.html", card=card, category="Past")
         elif category == "present":
             me.get_present()
-            return render_template("index.html", card=me.present[-1], category="Present")
+            card = me.present[-1]
+            session["last_card"] = {
+                "card_name": card.card_name,
+                "meaning": card.meaning,
+                "orientation": card.orientation,
+                "image_filename": card.image_filename,
+            }
+            session["last_category"] = "Present"
+            session["last_oracle"] = None
+            session["last_story_meanings"] = None
+            session["oracle_stories"] = None
+            return render_template("index.html", card=card, category="Present")
         elif category == "future":
             me.get_future()
-            return render_template("index.html", card=me.future[-1], category="Future")
+            card = me.future[-1]
+            session["last_card"] = {
+                "card_name": card.card_name,
+                "meaning": card.meaning,
+                "orientation": card.orientation,
+                "image_filename": card.image_filename,
+            }
+            session["last_category"] = "Future"
+            session["last_oracle"] = None
+            session["last_story_meanings"] = None
+            session["oracle_stories"] = None
+            return render_template("index.html", card=card, category="Future")
         elif category == "oracle":
             me.get_oracle()
             oracle = [
@@ -423,7 +485,35 @@ def draw(category):
                 (me.present[-1], "present"),
                 (me.future[-1], "future"),
             ]
-            return render_template("index.html", oracle=oracle)
+
+            lang = session.get("lang", "en")
+            story = generate_oracle_story(
+                me.past[-1].meaning,
+                me.present[-1].meaning,
+                me.future[-1].meaning,
+                lang=lang
+            )
+
+            session["last_oracle"] = [
+                {
+                    "card_name": card.card_name,
+                    "meaning": card.meaning,
+                    "orientation": card.orientation,
+                    "image_filename": card.image_filename,
+                }
+                for card, label in oracle
+            ]
+            session["last_oracle_labels"] = [label for card, label in oracle]
+            session["last_story_meanings"] = {
+                "past": me.past[-1].meaning,
+                "present": me.present[-1].meaning,
+                "future": me.future[-1].meaning,
+            }
+            session["oracle_stories"] = {lang: story}
+            session["last_card"] = None
+            session["last_category"] = None
+
+            return render_template("index.html", oracle=oracle, story=story)
         else:
             return "Unknown category."
     except TarotAPIError as error:
@@ -455,7 +545,7 @@ def history(category):
 def set_language(lang):
     if lang in TRANSLATIONS:
         session["lang"] = lang
-    return redirect(request.referrer or "/")
+    return redirect("/")
 
 
 if __name__ == "__main__":

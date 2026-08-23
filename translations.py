@@ -25,6 +25,7 @@ TRANSLATIONS = {
         "upright": "upright",
         "reversed": "reversed",
         "your": "your",
+        "oracle_whispers": "oracle whispers",
     },
     "he": {
         "welcome": "ברוכים הבאים ל",
@@ -52,6 +53,7 @@ TRANSLATIONS = {
         "upright": "זקוף",
         "reversed": "הפוך",
         "your": "שלך",
+        "oracle_whispers": "לחישות האורקל",
     },
     "uk": {
         "welcome": "ласкаво просимо до",
@@ -79,5 +81,6 @@ TRANSLATIONS = {
         "upright": "прямо",
         "reversed": "перевернуто",
         "your": "Ваше",
+        "oracle_whispers": "шепіт оракула",
     },
 }
