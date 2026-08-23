@@ -232,6 +232,7 @@ class User():
                 card = Card(card_name, meaning, random_meaning)
                 self.past.append(card)
                 Tarot_database.save_reading(self.user_name, "past", card.card_name, card.meaning, card.orientation)
+                Tarot_database.limit_readings(self.user_name, "past", 30)
                 print(card.give_card())
 
     def get_present(self):
@@ -251,6 +252,7 @@ class User():
             card = Card(card_name, meaning, random_meaning)
             self.present.append(card)
             Tarot_database.save_reading(self.user_name, "present", card.card_name, card.meaning, card.orientation)
+            Tarot_database.limit_readings(self.user_name, "present", 30)
             print(card.give_card())
 
     def get_future(self):
@@ -270,6 +272,7 @@ class User():
             card = Card(card_name, meaning, random_meaning)
             self.future.append(card)
             Tarot_database.save_reading(self.user_name, "future", card.card_name, card.meaning, card.orientation)
+            Tarot_database.limit_readings(self.user_name, "future", 30)
             print(card.give_card())
 
     def get_oracle(self):
@@ -290,6 +293,7 @@ class User():
             print(card1.card_name, "->", card1.image_filename)
             self.past.append(card1)
             Tarot_database.save_reading(self.user_name, "past", card1.card_name, card1.meaning, card1.orientation)
+            Tarot_database.limit_readings(self.user_name, "past", 30)
             print(card1.give_card())
 
             card_data2 = data["cards"][1]
@@ -303,6 +307,7 @@ class User():
             print(card2.card_name, "->", card2.image_filename)
             self.present.append(card2)
             Tarot_database.save_reading(self.user_name, "present", card2.card_name, card2.meaning, card2.orientation)
+            Tarot_database.limit_readings(self.user_name, "present", 30)
             print(card2.give_card())
 
             card_data3 = data["cards"][2]
@@ -316,6 +321,7 @@ class User():
             print(card3.card_name, "->", card3.image_filename)
             self.future.append(card3)
             Tarot_database.save_reading(self.user_name, "future", card3.card_name, card3.meaning, card3.orientation)
+            Tarot_database.limit_readings(self.user_name, "future", 30)
             print(card3.give_card())
 
 
@@ -330,13 +336,15 @@ def home():
 
 @app.route("/login", methods=["POST"])
 def login():
-    user_name = request.form["user_name"]
+    user_name = request.form["user_name"].strip()
     gender = request.form["gender"]
 
     if user_name.isdigit() or not user_name:
-        return "Invalid name, go back and try again."
+        return render_template("login.html", error="Invalid name, go back and try again.")
+    if user_name == "Micheal Kot":
+        return render_template("login.html", error="Michael Kot, you build future by yorself, no need for predictions!")
     if gender != "man" and gender != "woman":
-        return "Invalid gender, go back and try again."
+        return render_template("login.html", error="Invalid gender, go back and try again.")
 
     session["user_name"] = user_name
     session["gender"] = gender

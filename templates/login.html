@@ -265,6 +265,10 @@
     <h1>Taro</h1>
     <p>Enter your details to begin your reading.</p>
 
+    {% if error %}
+    <p style="color: #c96b4a; text-shadow: 0 0 6px rgba(201, 107, 74, 0.5);">{{ error }}</p>
+    {% endif %}
+
     <form action="/login" method="POST">
         <label for="user_name">Name</label>
         <input type="text" id="user_name" name="user_name" required>
