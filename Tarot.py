@@ -414,9 +414,9 @@ def draw(category):
         elif category == "oracle":
             me.get_oracle()
             oracle = [
-                (me.past[-1], "Past"),
-                (me.present[-1], "Present"),
-                (me.future[-1], "Future"),
+                (me.past[-1], "past"),
+                (me.present[-1], "present"),
+                (me.future[-1], "future"),
             ]
             return render_template("index.html", oracle=oracle)
         else:
