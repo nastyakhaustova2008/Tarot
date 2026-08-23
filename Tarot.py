@@ -3,6 +3,8 @@ import random
 import Tarot_database
 from flask import Flask, render_template, session, redirect, request
 import os
+from translations import TRANSLATIONS
+from deep_translator import GoogleTranslator
 
 
 class WrongNameError(Exception):
@@ -326,12 +328,46 @@ class User():
 
 
 app = Flask(__name__)
+
+
+def t(key):
+    lang = session.get("lang", "en")
+    return TRANSLATIONS.get(lang, TRANSLATIONS["en"]).get(key, key)
+
+app.jinja_env.globals["t"] = t
+
+LANG_CODE_MAP = {"en": "en", "he": "iw", "uk": "uk"}  # "iw" is Google Translate's legacy code for Hebrew
+
+_translation_cache = {}
+
+def translate_meaning(text, lang):
+    if lang == "en":
+        return text
+    cache_key = (text, lang)
+    if cache_key in _translation_cache:
+        return _translation_cache[cache_key]
+    try:
+        target = LANG_CODE_MAP.get(lang, lang)
+        translated = GoogleTranslator(source="en", target=target).translate(text)
+        _translation_cache[cache_key] = translated
+        return translated
+    except Exception:
+        return text
+
+def tr(text):
+    return translate_meaning(text, session.get("lang", "en"))
+
+app.jinja_env.globals["tr"] = tr
+
+
 app.secret_key = "change_this_to_something_random"
+
 
 @app.route("/")
 def home():
     if "user_name" not in session:
-        return render_template("login.html")
+        error = session.pop("login_error", None)
+        return render_template("login.html", error=error)
     return render_template("index.html", card=None)
 
 @app.route("/login", methods=["POST"])
@@ -339,12 +375,15 @@ def login():
     user_name = request.form["user_name"].strip()
     gender = request.form["gender"]
 
-    if user_name.isdigit() or not user_name:
-        return render_template("login.html", error="Invalid name, go back and try again.")
+    if not user_name or user_name.isdigit():
+        session["login_error"] = t("invalid_name")
+        return redirect("/")
     if user_name == "Micheal Kot":
-        return render_template("login.html", error="Michael Kot, you build future by yorself, no need for predictions!")
+        session["login_error"] = t("michael_kot_msg")
+        return redirect("/")
     if gender != "man" and gender != "woman":
-        return render_template("login.html", error="Invalid gender, go back and try again.")
+        session["login_error"] = t("invalid_gender")
+        return redirect("/")
 
     session["user_name"] = user_name
     session["gender"] = gender
@@ -364,19 +403,19 @@ def draw(category):
 
     if category == "past":
         me.get_past()
-        return render_template("index.html", card=me.past[-1], category="Past")
+        return render_template("index.html", card=me.past[-1], category="past")
     elif category == "present":
         me.get_present()
-        return render_template("index.html", card=me.present[-1], category="Present")
+        return render_template("index.html", card=me.present[-1], category="present")
     elif category == "future":
         me.get_future()
-        return render_template("index.html", card=me.future[-1], category="Future")
+        return render_template("index.html", card=me.future[-1], category="future")
     elif category == "oracle":
         me.get_oracle()
         oracle = [
-            (me.past[-1], "Past"),
-            (me.present[-1], "Present"),
-            (me.future[-1], "Future"),
+            (me.past[-1], "past"),
+            (me.present[-1], "present"),
+            (me.future[-1], "future"),
         ]
         return render_template("index.html", oracle=oracle)
     else:
@@ -402,6 +441,14 @@ def history(category):
 
     rows = Tarot_database.get_readings(user_name, category)
     return render_template("history.html", category=category, gender=gender, rows=rows)
+    
+
+@app.route("/set_language/<lang>")
+def set_language(lang):
+    if lang in TRANSLATIONS:
+        session["lang"] = lang
+    return redirect(request.referrer or "/")
+
 
 if __name__ == "__main__":
     Tarot_database.create_table()

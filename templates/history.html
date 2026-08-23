@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ session.get('lang', 'en') }}" dir="{{ 'rtl' if session.get('lang') == 'he' else 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -189,6 +189,11 @@
 </head>
 <body>
     <!-- decorative forest elements, drawn as simple original SVG shapes -->
+    <div style="position: relative; z-index: 1; margin-bottom: 15px;">
+        <a href="/set_language/en" class="button" style="padding:6px 12px; font-size:0.75em;">EN</a>
+        <a href="/set_language/he" class="button" style="padding:6px 12px; font-size:0.75em;">עב</a>
+        <a href="/set_language/uk" class="button" style="padding:6px 12px; font-size:0.75em;">УК</a>
+    </div>
 
     <div class="decor decor-branch-tr">
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
@@ -337,65 +342,65 @@
     <div class="decor-spore" style="top:90%; left:65%; width:3px; height:3px; background:#e0a458; box-shadow:0 0 5px #e0a458;"></div>
 
     {% if gender == "man" %}
-        <h1>Sir {{ session['user_name'] }}, your {{ category }}</h1>
+        <h1>{{ t('sir') }}, {{ session['user_name'] }}, {{ t('your') }} {{ t(category) }}</h1>
     {% else %}
-        <h1>Lady {{ session['user_name'] }}, your {{ category }}</h1>
+        <h1>{{ t('lady') }}, {{ session['user_name'] }}, {{ t('your') }} {{ t(category) }}</h1>
     {% endif %}
 
     {% if category == "oracle" %}
-        <h2>Past</h2>
+        <h2>{{ t('past') }}</h2>
         {% if past_rows %}
             {% for card_name, meaning, orientation in past_rows %}
             <div class="reading">
-                <div class="reading-name">{{ card_name }}</div>
-                <div class="reading-orientation">{{ orientation }}</div>
-                <div class="reading-meaning">{{ meaning }}</div>
+                <div class="reading-name">{{ tr(card_name) }}</div>
+                <div class="reading-orientation">{{ t(orientation) }}</div>
+                <div class="reading-meaning">{{ tr(meaning) }}</div>
             </div>
             {% endfor %}
         {% else %}
-            <p>No readings yet.</p>
+            <p>{{ t('no_readings') }}</p>
         {% endif %}
 
-        <h2>Present</h2>
+        <h2>{{ t('present') }}</h2>
         {% if present_rows %}
             {% for card_name, meaning, orientation in present_rows %}
             <div class="reading">
-                <div class="reading-name">{{ card_name }}</div>
-                <div class="reading-orientation">{{ orientation }}</div>
-                <div class="reading-meaning">{{ meaning }}</div>
+                <div class="reading-name">{{ tr(card_name) }}</div>
+                <div class="reading-orientation">{{ t(orientation) }}</div>
+                <div class="reading-meaning">{{ tr(meaning) }}</div>
             </div>
             {% endfor %}
         {% else %}
-            <p>No readings yet.</p>
+            <p>{{ t('no_readings') }}</p>
         {% endif %}
 
-        <h2>Future</h2>
+        <h2>{{ t('future') }}</h2>
         {% if future_rows %}
             {% for card_name, meaning, orientation in future_rows %}
             <div class="reading">
-                <div class="reading-name">{{ card_name }}</div>
-                <div class="reading-orientation">{{ orientation }}</div>
-                <div class="reading-meaning">{{ meaning }}</div>
+                <div class="reading-name">{{ tr(card_name) }}</div>
+                <div class="reading-orientation">{{ t(orientation) }}</div>
+                <div class="reading-meaning">{{ tr(meaning) }}</div>
             </div>
             {% endfor %}
         {% else %}
-            <p>No readings yet.</p>
+            <p>{{ t('no_readings') }}</p>
         {% endif %}
 
     {% else %}
         {% if rows %}
             {% for card_name, meaning, orientation in rows %}
             <div class="reading">
-                <div class="reading-name">{{ card_name }}</div>
-                <div class="reading-orientation">{{ orientation }}</div>
-                <div class="reading-meaning">{{ meaning }}</div>
+                <div class="reading-name">{{ tr(card_name) }}</div>
+                <div class="reading-orientation">{{ t(orientation) }}</div>
+                <div class="reading-meaning">{{ tr(meaning) }}</div>
             </div>
             {% endfor %}
         {% else %}
-            <p>No readings yet in this category.</p>
+            <p>{{ t('no_readings_category') }}</p>
         {% endif %}
     {% endif %}
 
-    <a class="button" href="/">Back to Taro</a>
+    <a class="button" href="/">{{ t('back_to_taro') }}</a>
 </body>
 </html>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ session.get('lang', 'en') }}" dir="{{ 'rtl' if session.get('lang') == 'he' else 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -158,10 +158,35 @@
             .oracle-row { flex-direction: column; }
             .decor { display: none; }
         }
+        a.button {
+            display: inline-block;
+            background: transparent;
+            color: #4a8a6e;
+            border: 1px solid #1f5b45;
+            text-decoration: none;
+            padding: 6px 12px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75em;
+            letter-spacing: 1px;
+            border-radius: 2px;
+            margin: 3px;
+            transition: all 0.15s ease-in-out;
+        }
+
+        a.button:hover {
+            background: rgba(224, 164, 88, 0.05);
+            border-color: #6b5537;
+            color: #a3835a;
+        }
     </style>
 </head>
 <body>
     <!-- decorative forest elements, dimmed so the space feels quiet before login -->
+    <div style="position: relative; z-index: 1; margin-bottom: 15px;">
+        <a href="/set_language/en" class="button" style="padding:6px 12px; font-size:0.75em;">EN</a>
+        <a href="/set_language/he" class="button" style="padding:6px 12px; font-size:0.75em;">עב</a>
+        <a href="/set_language/uk" class="button" style="padding:6px 12px; font-size:0.75em;">УК</a>
+    </div>
 
     <div class="decor decor-branch-tr">
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
@@ -263,24 +288,24 @@
     <div class="decor-spore" style="top:88%; left:35%; width:2px; height:2px; background:#39ffb0; box-shadow:0 0 3px #39ffb0;"></div>
 
     <h1>Taro</h1>
-    <p>Enter your details to begin your reading.</p>
+    <p>{{ t('login_prompt') }}</p>
 
     {% if error %}
     <p style="color: #c96b4a; text-shadow: 0 0 6px rgba(201, 107, 74, 0.5);">{{ error }}</p>
     {% endif %}
 
     <form action="/login" method="POST">
-        <label for="user_name">Name</label>
+        <label for="user_name">{{ t('name_label') }}</label>
         <input type="text" id="user_name" name="user_name" required>
 
-        <label for="gender">Gender</label>
+        <label for="gender">{{ t('gender_label') }}</label>
         <select id="gender" name="gender">
-            <option value="man">Man</option>
-            <option value="woman">Woman</option>
+            <option value="man">{{ t('man') }}</option>
+            <option value="woman">{{ t('woman') }}</option>
         </select>
 
         <br>
-        <button type="submit">Enter</button>
+        <button type="submit">{{ t('enter') }}</button>
     </form>
 </body>
 </html>

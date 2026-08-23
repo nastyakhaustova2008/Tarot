@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ session.get('lang', 'en') }}" dir="{{ 'rtl' if session.get('lang') == 'he' else 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -228,6 +228,11 @@
 </head>
 <body>
     <!-- decorative forest elements, drawn as simple original SVG shapes -->
+    <div style="position: relative; z-index: 1; margin-bottom: 15px;">
+        <a href="/set_language/en" class="button" style="padding:6px 12px; font-size:0.75em;">EN</a>
+        <a href="/set_language/he" class="button" style="padding:6px 12px; font-size:0.75em;">עב</a>
+        <a href="/set_language/uk" class="button" style="padding:6px 12px; font-size:0.75em;">УК</a>
+    </div>
 
     <div class="decor decor-branch-tr">
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
@@ -376,22 +381,22 @@
     <div class="decor-spore" style="top:90%; left:65%; width:3px; height:3px; background:#e0a458; box-shadow:0 0 5px #e0a458;"></div>
 
     <h1>TARO</h1>
-    <p>&gt; {{ session['user_name'] }}, welcome to CiberForest_</p>
+    <p>&gt; <bdi>{{ session['user_name'] }}</bdi>, {{ t('welcome') }} <bdi>CyberForest</bdi>_</p>
 
-    <div class="section-label">// draw a card</div>
+    <div class="section-label">// {{ t('draw_label') }}</div>
     <div>
-        <a class="button" href="/draw/past">Past</a>
-        <a class="button" href="/draw/present">Present</a>
-        <a class="button" href="/draw/future">Future</a>
-        <a class="button" href="/draw/oracle">Oracle</a>
+        <a class="button" href="/draw/past">{{ t('past') }}</a>
+        <a class="button" href="/draw/present">{{ t('present') }}</a>
+        <a class="button" href="/draw/future">{{ t('future') }}</a>
+        <a class="button" href="/draw/oracle">{{ t('oracle') }}</a>
     </div>
 
-    <div class="section-label">// see my history</div>
+    <div class="section-label">// {{ t('history_label') }}</div>
     <div>
-        <a class="button" href="/history/past">Past</a>
-        <a class="button" href="/history/present">Present</a>
-        <a class="button" href="/history/future">Future</a>
-        <a class="button" href="/history/oracle">Oracle</a>
+        <a class="button" href="/history/past">{{ t('past') }}</a>
+        <a class="button" href="/history/present">{{ t('present') }}</a>
+        <a class="button" href="/history/future">{{ t('future') }}</a>
+        <a class="button" href="/history/oracle">{{ t('oracle') }}</a>
     </div>
 
     {% if card %}
@@ -399,9 +404,9 @@
         {% if card.image_filename %}
         <img src="{{ url_for('static', filename=card.image_filename) }}" alt="{{ card.card_name }}">
         {% endif %}
-        <div class="card-name">{{ card.card_name }} ({{ card.orientation }})</div>
-        <div class="card-meaning">{{ card.meaning }}</div>
-        <div class="card-category">{{ category }}</div>
+        <div class="card-name">{{ tr(card.card_name) }} ({{ t(card.orientation) }})</div>
+        <div class="card-meaning">{{ tr(card.meaning) }}</div>
+        <div class="card-category">{{ t(category) }}</div>
     </div>
     {% endif %}
 
@@ -412,9 +417,9 @@
             {% if card.image_filename %}
             <img src="{{ url_for('static', filename=card.image_filename) }}" alt="{{ card.card_name }}">
             {% endif %}
-            <div class="card-name">{{ card.card_name }} ({{ card.orientation }})</div>
-            <div class="card-meaning">{{ card.meaning }}</div>
-            <div class="card-category">{{ label }}</div>
+            <div class="card-name">{{ tr(card.card_name) }} ({{ t(card.orientation) }})</div>
+            <div class="card-meaning">{{ tr(card.meaning) }}</div>
+            <div class="card-category">{{ t(label) }}</div>
         </div>
         {% endfor %}
     </div>
@@ -422,12 +427,12 @@
 
     {% if card or oracle %}
         {% if session['gender'] == "man" %}
-            <p class="greeting">&gt; sir {{ session['user_name'] }}, your {{ category if card else "oracle" }}</p>
+            <p class="greeting">&gt; {{ t('sir') }}, {{ session['user_name'] }}, {{ t('your') }} {{ t(category) if card else t('oracle') }}</p>
         {% else %}
-            <p class="greeting">&gt; lady {{ session['user_name'] }}, your {{ category if card else "oracle" }}</p>
+            <p class="greeting">&gt; {{ t('lady') }}, {{ session['user_name'] }}, {{ t('your') }} {{ t(category) if card else t('oracle') }}</p>
         {% endif %}
     {% endif %}
 
-    <a class="logout" href="/logout">[ log out ]</a>
+    <a class="logout" href="/logout">[ {{ t('logout') }} ]</a>
 </body>
 </html>
