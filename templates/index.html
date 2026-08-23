@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Taro</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
@@ -216,6 +217,12 @@
 
         a.logout:hover {
             color: #e0a458;
+        }
+        @media (max-width: 600px) {
+            h1 { font-size: 2em; letter-spacing: 3px; }
+            .card-box img { width: 140px; }
+            .oracle-row { flex-direction: column; }
+            .decor { display: none; }
         }
     </style>
 </head>
