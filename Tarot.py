@@ -401,25 +401,28 @@ def draw(category):
 
     me = User(session["user_name"], session["gender"])
 
-    if category == "past":
-        me.get_past()
-        return render_template("index.html", card=me.past[-1], category="past")
-    elif category == "present":
-        me.get_present()
-        return render_template("index.html", card=me.present[-1], category="present")
-    elif category == "future":
-        me.get_future()
-        return render_template("index.html", card=me.future[-1], category="future")
-    elif category == "oracle":
-        me.get_oracle()
-        oracle = [
-            (me.past[-1], "past"),
-            (me.present[-1], "present"),
-            (me.future[-1], "future"),
-        ]
-        return render_template("index.html", oracle=oracle)
-    else:
-        return "Unknown category."
+    try:
+        if category == "past":
+            me.get_past()
+            return render_template("index.html", card=me.past[-1], category="Past")
+        elif category == "present":
+            me.get_present()
+            return render_template("index.html", card=me.present[-1], category="Present")
+        elif category == "future":
+            me.get_future()
+            return render_template("index.html", card=me.future[-1], category="Future")
+        elif category == "oracle":
+            me.get_oracle()
+            oracle = [
+                (me.past[-1], "Past"),
+                (me.present[-1], "Present"),
+                (me.future[-1], "Future"),
+            ]
+            return render_template("index.html", oracle=oracle)
+        else:
+            return "Unknown category."
+    except TarotAPIError as error:
+        return render_template("index.html", error_message=str(error))
 
 @app.route("/history/<category>")
 def history(category):

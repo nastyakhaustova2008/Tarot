@@ -425,6 +425,10 @@
     </div>
     {% endif %}
 
+    {% if error_message %}
+    <p class="card-meaning" style="color: #ff6b6b;">&gt; ERROR: {{ error_message }}</p>
+    {% endif %}
+
     {% if card or oracle %}
         {% if session['gender'] == "man" %}
             <p class="greeting">&gt; {{ t('sir') }}, {{ session['user_name'] }}, {{ t('your') }} {{ t(category) if card else t('oracle') }}</p>
