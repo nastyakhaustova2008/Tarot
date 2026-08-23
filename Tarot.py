@@ -5,6 +5,11 @@ from flask import Flask, render_template, session, redirect, request
 import os
 from translations import TRANSLATIONS
 from deep_translator import GoogleTranslator
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 
 class WrongNameError(Exception):
