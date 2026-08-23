@@ -403,7 +403,7 @@ def home():
 
     return render_template("index.html", card=card, category=category, oracle=oracle, story=story)
 
-    
+
 @app.route("/login", methods=["POST"])
 def login():
     user_name = request.form["user_name"].strip()
@@ -412,7 +412,7 @@ def login():
     if not user_name or user_name.isdigit():
         session["login_error"] = t("invalid_name")
         return redirect("/")
-    if user_name == "Micheal Kot":
+    if user_name == "Michael Kot":
         session["login_error"] = t("michael_kot_msg")
         return redirect("/")
     if gender != "man" and gender != "woman":
