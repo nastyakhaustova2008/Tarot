@@ -7,9 +7,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             background-color: #05080a;
@@ -25,84 +23,16 @@
             overflow-x: hidden;
         }
 
-        /* subtle scan lines over everything */
-        body::before {
-            content: "";
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: repeating-linear-gradient(
-                to bottom,
-                rgba(0, 255, 170, 0.025),
-                rgba(0, 255, 170, 0.025) 1px,
-                transparent 2px,
-                transparent 4px
-            );
-            pointer-events: none;
-            z-index: 999;
-        }
-
-        .decor {
-            position: fixed;
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.35;
-        }
-        .decor svg { display: block; }
-
-        .decor-leaf-tl     { top: -20px; left: -30px; width: 160px; transform: rotate(-15deg); }
-        .decor-leaf-br     { bottom: -30px; right: -20px; width: 200px; transform: rotate(160deg); }
-        .decor-leaf-tr2    { top: 60px; right: 40px; width: 90px; transform: rotate(60deg); opacity: 0.22; }
-        .decor-leaf-bl2    { bottom: 120px; left: 30px; width: 80px; transform: rotate(-70deg); opacity: 0.22; }
-        .decor-leaf-midL   { top: 45%; left: 5px; width: 70px; transform: rotate(20deg); opacity: 0.15; }
-        .decor-leaf-midR   { top: 55%; right: 10px; width: 75px; transform: rotate(-30deg); opacity: 0.15; }
-
-        .decor-branch-tr   { top: 0; right: 0; width: 220px; opacity: 0.25; }
-        .decor-branch-tl   { top: 0; left: 0; width: 180px; opacity: 0.18; transform: scaleX(-1); }
-        .decor-branch-bl   { bottom: 0; left: 0; width: 200px; opacity: 0.2; transform: rotate(180deg); }
-
-        .decor-mushroom-bl  { bottom: 0; left: 10px; width: 90px; opacity: 0.4; }
-        .decor-mushroom-b2  { bottom: 0; left: 90px; width: 55px; opacity: 0.3; }
-        .decor-mushroom-br  { bottom: 0; right: 20px; width: 70px; opacity: 0.35; }
-        .decor-mushroom-br2 { bottom: 0; right: 80px; width: 45px; opacity: 0.28; }
-
-        .decor-vine-left   { top: 0; left: 0; width: 40px; height: 100vh; opacity: 0.18; }
-        .decor-vine-right  { top: 0; right: 0; width: 40px; height: 100vh; opacity: 0.18; transform: scaleX(-1); }
-
-        .decor-center {
-            top: 50%; left: 50%;
-            width: 620px;
-            transform: translate(-50%, -50%);
-            opacity: 0.06;
-        }
-
-        .decor-spore {
-            position: fixed;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 0;
-            filter: blur(0.5px);
-        }
+        .lang-select { position: relative; z-index: 1; margin-bottom: 15px; }
 
         h1 {
             font-size: 2.2em;
             letter-spacing: 5px;
-            text-transform: capitalize;
             color: #39ffb0;
-            text-shadow:
-                0 0 5px #39ffb0,
-                0 0 20px #17d9a3,
-                0 0 40px #0fae86;
+            text-shadow: 0 0 5px #39ffb0, 0 0 20px #17d9a3, 0 0 40px #0fae86;
             margin-bottom: 5px;
             position: relative;
             z-index: 1;
-            animation: flicker 6s infinite;
-        }
-
-        @keyframes flicker {
-            0%, 96%, 100% { opacity: 1; }
-            97% { opacity: 0.4; }
-            98% { opacity: 1; }
-            99% { opacity: 0.6; }
         }
 
         h2 {
@@ -116,11 +46,7 @@
             z-index: 1;
         }
 
-        p {
-            color: #6fe6c9;
-            position: relative;
-            z-index: 1;
-        }
+        p { color: #6fe6c9; position: relative; z-index: 1; }
 
         .reading {
             max-width: 500px;
@@ -130,28 +56,114 @@
             border-radius: 4px;
             text-align: left;
             background: rgba(0, 255, 170, 0.03);
-            box-shadow:
-                0 0 10px rgba(57, 255, 176, 0.25),
-                0 0 30px rgba(224, 164, 88, 0.08);
+            box-shadow: 0 0 10px rgba(57, 255, 176, 0.25), 0 0 30px rgba(224, 164, 88, 0.08);
             position: relative;
             z-index: 1;
         }
 
-        .reading-name {
-            font-size: 1.2em;
-            letter-spacing: 2px;
-            color: #39ffb0;
+        html[dir="rtl"] .reading { text-align: right; }
+
+        .reading-name { font-size: 1.2em; letter-spacing: 2px; color: #39ffb0; }
+        .reading-orientation { font-style: italic; color: #e0a458; }
+        .reading-meaning { margin-top: 8px; line-height: 1.5em; color: #9fe8d6; }
+
+        .note-inline-img {
+            display: block;
+            max-width: 100%;
+            border-radius: 4px;
+            margin: 8px 0;
+            border: 1px solid #2fbf8c;
         }
 
-        .reading-orientation {
-            font-style: italic;
+        .note-block {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px dashed rgba(57, 255, 176, 0.3);
+            font-size: 0.9em;
+            color: #c9e8dd;
+            white-space: pre-wrap;
+        }
+
+        .reading-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .group-badge {
+            font-size: 0.7em;
+            letter-spacing: 1px;
             color: #e0a458;
+            border: 1px solid #6b5537;
+            border-radius: 10px;
+            padding: 2px 8px;
+            text-transform: uppercase;
         }
 
-        .reading-meaning {
-            margin-top: 8px;
+        .note-icon-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75em;
+            letter-spacing: 1px;
+            color: #4a8a6e;
+            text-decoration: none;
+            border: 1px solid #1f5b45;
+            border-radius: 3px;
+            padding: 3px 8px;
+        }
+
+        .note-icon-link:hover { color: #a3835a; border-color: #6b5537; }
+
+        .note-icon-thumb {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #39ffb0;
+        }
+
+        .note-icon-generic { width: 14px; height: 14px; }
+
+        .oracle-group {
+            max-width: 720px;
+            margin: 30px auto 50px;
+            padding: 20px;
+            border: 1px solid #2fbf8c;
+            border-radius: 8px;
+            position: relative;
+            z-index: 1;
+            background: rgba(0, 255, 170, 0.02);
+        }
+
+        .oracle-group-label {
+            font-size: 0.75em;
+            letter-spacing: 2px;
+            color: #e0a458;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .oracle-story-block {
+            margin-top: 15px;
+            padding: 15px;
+            border: 1px dashed #39ffb0;
+            border-radius: 6px;
+            text-align: left;
+            color: #d9fff0;
             line-height: 1.5em;
-            color: #9fe8d6;
+        }
+
+        html[dir="rtl"] .oracle-story-block { text-align: right; }
+
+        .oracle-story-label {
+            font-size: 0.75em;
+            letter-spacing: 2px;
+            color: #e0a458;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 8px;
         }
 
         a.button {
@@ -172,174 +184,36 @@
             position: relative;
             z-index: 1;
         }
+        a.button:hover { background: rgba(224, 164, 88, 0.1); border-color: #e0a458; color: #e0a458; }
 
-        a.button:hover {
-            background: rgba(224, 164, 88, 0.1);
-            border-color: #e0a458;
-            color: #e0a458;
-            box-shadow: 0 0 15px rgba(224, 164, 88, 0.5);
+        a.lang-btn {
+            display: inline-block;
+            background: transparent;
+            color: #39ffb0;
+            border: 1px solid #39ffb0;
+            text-decoration: none;
+            padding: 6px 12px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75em;
+            letter-spacing: 1px;
+            border-radius: 2px;
+            margin: 3px;
         }
+        a.lang-btn:hover { border-color: #e0a458; color: #e0a458; }
+
         @media (max-width: 600px) {
-            h1 { font-size: 2em; letter-spacing: 3px; }
-            .card-box img { width: 140px; }
-            .oracle-row { flex-direction: column; }
-            .decor { display: none; }
+            h1 { font-size: 1.6em; letter-spacing: 3px; }
+            .reading, .oracle-group { max-width: 92%; }
         }
     </style>
 </head>
 <body>
-    <!-- decorative forest elements, drawn as simple original SVG shapes -->
-    <div style="position: relative; z-index: 1; margin-bottom: 15px;">
-        <a href="/set_language/en" class="button" style="padding:6px 12px; font-size:0.75em;">EN</a>
-        <a href="/set_language/he" class="button" style="padding:6px 12px; font-size:0.75em;">עב</a>
-        <a href="/set_language/uk" class="button" style="padding:6px 12px; font-size:0.75em;">УК</a>
-    </div>
 
-    <div class="decor decor-branch-tr">
-        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-            <path d="M200 10 C150 20 120 40 90 70 C70 90 60 110 40 120" stroke="#39ffb0" stroke-width="2" fill="none"/>
-            <path d="M120 45 C110 30 100 20 85 15" stroke="#39ffb0" stroke-width="1.5" fill="none"/>
-            <path d="M95 68 C85 55 78 45 65 40" stroke="#39ffb0" stroke-width="1.5" fill="none"/>
-            <ellipse cx="85" cy="14" rx="10" ry="5" fill="#39ffb0" transform="rotate(-30 85 14)"/>
-            <ellipse cx="63" cy="39" rx="10" ry="5" fill="#39ffb0" transform="rotate(-20 63 39)"/>
-            <ellipse cx="42" cy="118" rx="12" ry="6" fill="#e0a458" transform="rotate(10 42 118)"/>
-        </svg>
+    <div class="lang-select">
+        <a href="/set_language/en?next={{ request.path }}" class="lang-btn">EN</a>
+        <a href="/set_language/he?next={{ request.path }}" class="lang-btn">עב</a>
+        <a href="/set_language/uk?next={{ request.path }}" class="lang-btn">УК</a>
     </div>
-
-    <div class="decor decor-branch-tl">
-        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-            <path d="M200 10 C150 20 120 40 90 70 C70 90 60 110 40 120" stroke="#e0a458" stroke-width="2" fill="none"/>
-            <path d="M120 45 C110 30 100 20 85 15" stroke="#e0a458" stroke-width="1.5" fill="none"/>
-            <ellipse cx="85" cy="14" rx="10" ry="5" fill="#e0a458" transform="rotate(-30 85 14)"/>
-            <ellipse cx="63" cy="39" rx="10" ry="5" fill="#39ffb0" transform="rotate(-20 63 39)"/>
-        </svg>
-    </div>
-
-    <div class="decor decor-branch-bl">
-        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-            <path d="M200 10 C150 20 120 40 90 70 C70 90 60 110 40 120" stroke="#39ffb0" stroke-width="2" fill="none"/>
-            <ellipse cx="85" cy="14" rx="10" ry="5" fill="#39ffb0" transform="rotate(-30 85 14)"/>
-            <ellipse cx="42" cy="118" rx="12" ry="6" fill="#e0a458" transform="rotate(10 42 118)"/>
-        </svg>
-    </div>
-
-    <div class="decor decor-leaf-tl">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 90 C10 50 40 10 90 10 C90 50 60 90 10 90 Z" fill="#39ffb0"/>
-            <path d="M10 90 C40 70 60 40 90 10" stroke="#05080a" stroke-width="2" fill="none"/>
-        </svg>
-    </div>
-
-    <div class="decor decor-leaf-br">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 90 C10 50 40 10 90 10 C90 50 60 90 10 90 Z" fill="#e0a458"/>
-            <path d="M10 90 C40 70 60 40 90 10" stroke="#05080a" stroke-width="2" fill="none"/>
-        </svg>
-    </div>
-
-    <div class="decor decor-leaf-tr2">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 90 C10 50 40 10 90 10 C90 50 60 90 10 90 Z" fill="#e0a458"/>
-        </svg>
-    </div>
-
-    <div class="decor decor-leaf-bl2">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 90 C10 50 40 10 90 10 C90 50 60 90 10 90 Z" fill="#39ffb0"/>
-        </svg>
-    </div>
-
-    <div class="decor decor-leaf-midL">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 90 C10 50 40 10 90 10 C90 50 60 90 10 90 Z" fill="#39ffb0"/>
-        </svg>
-    </div>
-
-    <div class="decor decor-leaf-midR">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 90 C10 50 40 10 90 10 C90 50 60 90 10 90 Z" fill="#e0a458"/>
-        </svg>
-    </div>
-
-    <div class="decor decor-mushroom-bl">
-        <svg viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
-            <path d="M5 45 C5 15 75 15 75 45 C55 35 25 35 5 45 Z" fill="#e0a458"/>
-            <circle cx="20" cy="28" r="4" fill="#05080a" opacity="0.5"/>
-            <circle cx="45" cy="20" r="3" fill="#05080a" opacity="0.5"/>
-            <circle cx="60" cy="30" r="3.5" fill="#05080a" opacity="0.5"/>
-            <rect x="32" y="45" width="16" height="45" rx="6" fill="#d8cba8"/>
-        </svg>
-    </div>
-
-    <div class="decor decor-mushroom-b2">
-        <svg viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
-            <path d="M5 45 C5 15 75 15 75 45 C55 35 25 35 5 45 Z" fill="#39ffb0"/>
-            <rect x="32" y="45" width="16" height="45" rx="6" fill="#d8cba8"/>
-        </svg>
-    </div>
-
-    <div class="decor decor-mushroom-br">
-        <svg viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
-            <path d="M5 45 C5 15 75 15 75 45 C55 35 25 35 5 45 Z" fill="#39ffb0"/>
-            <circle cx="25" cy="30" r="3.5" fill="#05080a" opacity="0.5"/>
-            <circle cx="55" cy="26" r="3" fill="#05080a" opacity="0.5"/>
-            <rect x="32" y="45" width="16" height="45" rx="6" fill="#d8cba8"/>
-        </svg>
-    </div>
-
-    <div class="decor decor-mushroom-br2">
-        <svg viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
-            <path d="M5 45 C5 15 75 15 75 45 C55 35 25 35 5 45 Z" fill="#e0a458"/>
-            <rect x="32" y="45" width="16" height="45" rx="6" fill="#d8cba8"/>
-        </svg>
-    </div>
-
-    <div class="decor decor-vine-left">
-        <svg viewBox="0 0 40 400" xmlns="http://www.w3.org/2000/svg">
-            <path d="M20 0 C 5 60, 35 120, 20 180 C 5 240, 35 300, 20 400" stroke="#39ffb0" stroke-width="1.5" fill="none"/>
-            <circle cx="12" cy="60" r="4" fill="#39ffb0"/>
-            <circle cx="30" cy="140" r="4" fill="#e0a458"/>
-            <circle cx="12" cy="230" r="4" fill="#39ffb0"/>
-            <circle cx="30" cy="320" r="4" fill="#e0a458"/>
-        </svg>
-    </div>
-
-    <div class="decor decor-vine-right">
-        <svg viewBox="0 0 40 400" xmlns="http://www.w3.org/2000/svg">
-            <path d="M20 0 C 5 60, 35 120, 20 180 C 5 240, 35 300, 20 400" stroke="#e0a458" stroke-width="1.5" fill="none"/>
-            <circle cx="12" cy="90" r="4" fill="#e0a458"/>
-            <circle cx="30" cy="170" r="4" fill="#39ffb0"/>
-            <circle cx="12" cy="270" r="4" fill="#e0a458"/>
-        </svg>
-    </div>
-
-    <!-- large faint glowing rune, centered behind all content -->
-    <div class="decor decor-center">
-        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="200" cy="200" r="190" stroke="#39ffb0" stroke-width="1" fill="none"/>
-            <circle cx="200" cy="200" r="150" stroke="#e0a458" stroke-width="1" fill="none"/>
-            <circle cx="200" cy="200" r="110" stroke="#39ffb0" stroke-width="1" fill="none"/>
-            <polygon points="200,20 356,290 44,290" stroke="#39ffb0" stroke-width="1" fill="none"/>
-            <polygon points="200,380 44,110 356,110" stroke="#e0a458" stroke-width="1" fill="none"/>
-            <circle cx="200" cy="200" r="4" fill="#39ffb0"/>
-            <g stroke="#39ffb0" stroke-width="1">
-                <line x1="200" y1="10" x2="200" y2="30"/>
-                <line x1="200" y1="370" x2="200" y2="390"/>
-                <line x1="10" y1="200" x2="30" y2="200"/>
-                <line x1="370" y1="200" x2="390" y2="200"/>
-            </g>
-        </svg>
-    </div>
-
-    <!-- floating spore / light particles scattered across the page -->
-    <div class="decor-spore" style="top:12%; left:12%; width:4px; height:4px; background:#39ffb0; box-shadow:0 0 6px #39ffb0;"></div>
-    <div class="decor-spore" style="top:22%; left:78%; width:3px; height:3px; background:#e0a458; box-shadow:0 0 6px #e0a458;"></div>
-    <div class="decor-spore" style="top:38%; left:8%;  width:3px; height:3px; background:#e0a458; box-shadow:0 0 5px #e0a458;"></div>
-    <div class="decor-spore" style="top:48%; left:90%; width:4px; height:4px; background:#39ffb0; box-shadow:0 0 6px #39ffb0;"></div>
-    <div class="decor-spore" style="top:65%; left:15%; width:3px; height:3px; background:#39ffb0; box-shadow:0 0 5px #39ffb0;"></div>
-    <div class="decor-spore" style="top:72%; left:85%; width:4px; height:4px; background:#e0a458; box-shadow:0 0 6px #e0a458;"></div>
-    <div class="decor-spore" style="top:85%; left:30%; width:3px; height:3px; background:#39ffb0; box-shadow:0 0 5px #39ffb0;"></div>
-    <div class="decor-spore" style="top:90%; left:65%; width:3px; height:3px; background:#e0a458; box-shadow:0 0 5px #e0a458;"></div>
 
     {% if gender == "man" %}
         <h1>{{ t('sir') }}, {{ session['user_name'] }}, {{ t('your') }} {{ t(category) }}</h1>
@@ -348,39 +222,43 @@
     {% endif %}
 
     {% if category == "oracle" %}
-        <h2>{{ t('past') }}</h2>
-        {% if past_rows %}
-            {% for card_name, meaning, orientation in past_rows %}
-            <div class="reading">
-                <div class="reading-name">{{ tr(card_name) }}</div>
-                <div class="reading-orientation">{{ t(orientation) }}</div>
-                <div class="reading-meaning">{{ tr(meaning) }}</div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <p>{{ t('no_readings') }}</p>
-        {% endif %}
 
-        <h2>{{ t('present') }}</h2>
-        {% if present_rows %}
-            {% for card_name, meaning, orientation in present_rows %}
-            <div class="reading">
-                <div class="reading-name">{{ tr(card_name) }}</div>
-                <div class="reading-orientation">{{ t(orientation) }}</div>
-                <div class="reading-meaning">{{ tr(meaning) }}</div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <p>{{ t('no_readings') }}</p>
-        {% endif %}
+        {% if groups %}
+            {% for group in groups %}
+            <div class="oracle-group">
+                <div class="oracle-group-label">// {{ t('part_of_oracle') }} — {{ group.group_id }}</div>
 
-        <h2>{{ t('future') }}</h2>
-        {% if future_rows %}
-            {% for card_name, meaning, orientation in future_rows %}
-            <div class="reading">
-                <div class="reading-name">{{ tr(card_name) }}</div>
-                <div class="reading-orientation">{{ t(orientation) }}</div>
-                <div class="reading-meaning">{{ tr(meaning) }}</div>
+                {% for cat in ["past", "present", "future"] %}
+                    {% set row = group[cat] %}
+                    {% if row %}
+                    {# row = (id, category, card_name, meaning, orientation, note_text, note_image, note_image_position) #}
+                    <h2>{{ t(cat) }}</h2>
+                    <div class="reading">
+                        <div class="reading-name">{{ tr(row[2]) }}</div>
+                        <div class="reading-orientation">{{ t(row[4]) }}</div>
+                        <div class="reading-meaning">{{ tr(row[3]) }}</div>
+
+                        <div class="reading-footer">
+                            <span class="group-badge">{{ t('oracle') }}</span>
+                            <a class="note-icon-link" href="/note/{{ row[0] }}">
+                                {% if row[6] %}
+                                    <img class="note-icon-thumb" src="{{ row[6] }}" alt="note">
+                                {% elif row[5] %}
+                                    <svg class="note-icon-generic" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#4a8a6e" stroke-width="2"/></svg>
+                                {% endif %}
+                                {{ t('edit_note') if (row[5] or row[6]) else t('add_note') }}
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+                {% if group.story %}
+                <div class="oracle-story-block">
+                    <span class="oracle-story-label">// {{ t('oracle_whispers') }}</span>
+                    {{ tr(group.story) }}
+                </div>
+                {% endif %}
             </div>
             {% endfor %}
         {% else %}
@@ -389,11 +267,28 @@
 
     {% else %}
         {% if rows %}
-            {% for card_name, meaning, orientation in rows %}
+            {% for row in rows %}
+            {# row = (id, card_name, meaning, orientation, group_id, note_text, note_image, note_image_position) #}
             <div class="reading">
-                <div class="reading-name">{{ tr(card_name) }}</div>
-                <div class="reading-orientation">{{ t(orientation) }}</div>
-                <div class="reading-meaning">{{ tr(meaning) }}</div>
+                <div class="reading-name">{{ tr(row[1]) }}</div>
+                <div class="reading-orientation">{{ t(row[3]) }}</div>
+                <div class="reading-meaning">{{ tr(row[2]) }}</div>
+
+                <div class="reading-footer">
+                    {% if row[4] %}
+                        <span class="group-badge">{{ t('part_of_oracle') }}</span>
+                    {% else %}
+                        <span></span>
+                    {% endif %}
+                    <a class="note-icon-link" href="/note/{{ row[0] }}">
+                        {% if row[6] %}
+                            <img class="note-icon-thumb" src="{{ row[6] }}" alt="note">
+                        {% elif row[5] %}
+                            <svg class="note-icon-generic" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#4a8a6e" stroke-width="2"/></svg>
+                        {% endif %}
+                        {{ t('edit_note') if (row[5] or row[6]) else t('add_note') }}
+                    </a>
+                </div>
             </div>
             {% endfor %}
         {% else %}

@@ -312,9 +312,9 @@
 <body>
     <!-- decorative forest elements, drawn as simple original SVG shapes -->
     <div style="position: relative; z-index: 1; margin-bottom: 15px;">
-        <a href="/set_language/en" class="button" style="padding:6px 12px; font-size:0.75em;">EN</a>
-        <a href="/set_language/he" class="button" style="padding:6px 12px; font-size:0.75em;">עב</a>
-        <a href="/set_language/uk" class="button" style="padding:6px 12px; font-size:0.75em;">УК</a>
+        <a href="/set_language/en?next={{ request.path }}" class="button" style="padding:6px 12px; font-size:0.75em;">EN</a>
+        <a href="/set_language/he?next={{ request.path }}" class="button" style="padding:6px 12px; font-size:0.75em;">עב</a>
+        <a href="/set_language/uk?next={{ request.path }}" class="button" style="padding:6px 12px; font-size:0.75em;">УК</a>
     </div>
 
     <div class="decor decor-branch-tr">
@@ -527,7 +527,7 @@
             <div class="bubble-leaf bubble-leaf-right1"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 36 C4 20 16 4 36 4 C36 20 24 36 4 36 Z" fill="#39ffb0"/></svg></div>
             <div class="bubble-leaf bubble-leaf-right2"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 36 C4 20 16 4 36 4 C36 20 24 36 4 36 Z" fill="#2fbf8c"/></svg></div>
             <span class="oracle-bubble-label">// {{ t('oracle_whispers') }}</span>
-            {{ story }}
+            {{ tr(story) }}
         </div>
     </div>
     {% endif %}

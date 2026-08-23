@@ -7,6 +7,8 @@ from translations import TRANSLATIONS
 from deep_translator import GoogleTranslator
 from dotenv import load_dotenv
 from tarot_ai import generate_oracle_story
+from markupsafe import Markup, escape
+
 
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -288,56 +290,61 @@ class User():
         except requests.exceptions.RequestException:
             raise TarotAPIError()
         else:
-            data = response.json()                 #print(data)
+            data = response.json()
+            group_id = Tarot_database.new_group_id()
+
             card_data1 = data["cards"][0]
             card_name1 = card_data1["name"]
             random_meaning1 = random.choice(["upright", "reversed"])
-            if random_meaning1 == "upright":
-                meaning1 = card_data1["meaning_up"]
-            else:
-                meaning1 = card_data1["meaning_rev"]
+            meaning1 = card_data1["meaning_up"] if random_meaning1 == "upright" else card_data1["meaning_rev"]
             card1 = Card(card_name1, meaning1, random_meaning1)
-            print(card1.card_name, "->", card1.image_filename)
             self.past.append(card1)
-            Tarot_database.save_reading(self.user_name, "past", card1.card_name, card1.meaning, card1.orientation)
+            Tarot_database.save_reading(self.user_name, "past", card1.card_name, card1.meaning, card1.orientation, group_id)
             Tarot_database.limit_readings(self.user_name, "past", 30)
-            print(card1.give_card())
 
             card_data2 = data["cards"][1]
             card_name2 = card_data2["name"]
             random_meaning2 = random.choice(["upright", "reversed"])
-            if random_meaning2 == "upright":
-                meaning2 = card_data2["meaning_up"]
-            else:
-                meaning2 = card_data2["meaning_rev"]
+            meaning2 = card_data2["meaning_up"] if random_meaning2 == "upright" else card_data2["meaning_rev"]
             card2 = Card(card_name2, meaning2, random_meaning2)
-            print(card2.card_name, "->", card2.image_filename)
             self.present.append(card2)
-            Tarot_database.save_reading(self.user_name, "present", card2.card_name, card2.meaning, card2.orientation)
+            Tarot_database.save_reading(self.user_name, "present", card2.card_name, card2.meaning, card2.orientation, group_id)
             Tarot_database.limit_readings(self.user_name, "present", 30)
-            print(card2.give_card())
 
             card_data3 = data["cards"][2]
             card_name3 = card_data3["name"]
             random_meaning3 = random.choice(["upright", "reversed"])
-            if random_meaning3 == "upright":
-                meaning3 = card_data3["meaning_up"]
-            else:
-                meaning3 = card_data3["meaning_rev"]
+            meaning3 = card_data3["meaning_up"] if random_meaning3 == "upright" else card_data3["meaning_rev"]
             card3 = Card(card_name3, meaning3, random_meaning3)
-            print(card3.card_name, "->", card3.image_filename)
             self.future.append(card3)
-            Tarot_database.save_reading(self.user_name, "future", card3.card_name, card3.meaning, card3.orientation)
+            Tarot_database.save_reading(self.user_name, "future", card3.card_name, card3.meaning, card3.orientation, group_id)
             Tarot_database.limit_readings(self.user_name, "future", 30)
-            story = generate_oracle_story(card1.meaning, card2.meaning, card3.meaning)
-            self.last_story = story
-            if story:
-                print(story)
-            else:
-                print("The mists are unclear right now — try your oracle reading again shortly.")
+
+            story = generate_oracle_story(meaning1, meaning2, meaning3, lang="en")
+            Tarot_database.save_oracle_story(self.user_name, group_id, story)
+
+            self.last_group_id = group_id
+            self.oracle_story = story
 
 
 app = Flask(__name__)
+
+
+def render_note(note_text, note_image, image_position):
+    if not note_text and not note_image:
+        return ""
+    text = note_text or ""
+    if note_image and image_position is not None and 0 <= image_position <= len(text):
+        before = escape(text[:image_position])
+        after = escape(text[image_position:])
+        img_tag = Markup(f'<img src="{note_image}" class="note-inline-img" alt="note">')
+        return Markup(before) + img_tag + Markup(after)
+    elif note_image:
+        return Markup(escape(text)) + Markup(f'<img src="{note_image}" class="note-inline-img" alt="note">')
+    else:
+        return Markup(escape(text))
+
+app.jinja_env.globals["render_note"] = render_note
 
 
 def t(key):
@@ -358,7 +365,12 @@ def translate_meaning(text, lang):
         return _translation_cache[cache_key]
     try:
         target = LANG_CODE_MAP.get(lang, lang)
-        translated = GoogleTranslator(source="auto", target=target).translate(text)
+        translated = GoogleTranslator(source="en", target=target).translate(text)
+
+        # Reject obviously broken results (Google error pages returned as "success")
+        if not translated or "Error 500" in translated or "Server Error" in translated or len(translated) > len(text) * 4:
+            return text
+
         _translation_cache[cache_key] = translated
         return translated
     except Exception:
@@ -381,25 +393,11 @@ def home():
 
     card = session.get("last_card")
     category = session.get("last_category")
+    story = session.get("last_story")
 
     oracle = None
     if session.get("last_oracle"):
         oracle = list(zip(session["last_oracle"], session["last_oracle_labels"]))
-
-    story = None
-    if session.get("last_oracle") and session.get("last_story_meanings"):
-        lang = session.get("lang", "en")
-        oracle_stories = session.get("oracle_stories") or {}
-
-        if oracle_stories.get(lang):
-            story = oracle_stories[lang]
-        else:
-            meanings = session["last_story_meanings"]
-            story = generate_oracle_story(
-                meanings["past"], meanings["present"], meanings["future"], lang=lang
-            )
-            oracle_stories[lang] = story
-            session["oracle_stories"] = oracle_stories
 
     return render_template("index.html", card=card, category=category, oracle=oracle, story=story)
 
@@ -460,11 +458,10 @@ def draw(category):
                 "orientation": card.orientation,
                 "image_filename": card.image_filename,
             }
-            session["last_category"] = "Past"
+            session["last_category"] = "past"
             session["last_oracle"] = None
-            session["last_story_meanings"] = None
-            session["oracle_stories"] = None
-            return render_template("index.html", card=card, category="Past")
+            session["last_story"] = None
+            return render_template("index.html", card=card, category="past")
         elif category == "present":
             me.get_present()
             card = me.present[-1]
@@ -474,11 +471,10 @@ def draw(category):
                 "orientation": card.orientation,
                 "image_filename": card.image_filename,
             }
-            session["last_category"] = "Present"
+            session["last_category"] = "present"
             session["last_oracle"] = None
-            session["last_story_meanings"] = None
-            session["oracle_stories"] = None
-            return render_template("index.html", card=card, category="Present")
+            session["last_story"] = None
+            return render_template("index.html", card=card, category="present")
         elif category == "future":
             me.get_future()
             card = me.future[-1]
@@ -488,11 +484,10 @@ def draw(category):
                 "orientation": card.orientation,
                 "image_filename": card.image_filename,
             }
-            session["last_category"] = "Future"
+            session["last_category"] = "future"
             session["last_oracle"] = None
-            session["last_story_meanings"] = None
-            session["oracle_stories"] = None
-            return render_template("index.html", card=card, category="Future")
+            session["last_story"] = None
+            return render_template("index.html", card=card, category="future")
         elif category == "oracle":
             me.get_oracle()
             oracle = [
@@ -500,15 +495,6 @@ def draw(category):
                 (me.present[-1], "present"),
                 (me.future[-1], "future"),
             ]
-
-            lang = session.get("lang", "en")
-            story = generate_oracle_story(
-                me.past[-1].meaning,
-                me.present[-1].meaning,
-                me.future[-1].meaning,
-                lang=lang
-            )
-
             session["last_oracle"] = [
                 {
                     "card_name": card.card_name,
@@ -519,16 +505,10 @@ def draw(category):
                 for card, label in oracle
             ]
             session["last_oracle_labels"] = [label for card, label in oracle]
-            session["last_story_meanings"] = {
-                "past": me.past[-1].meaning,
-                "present": me.present[-1].meaning,
-                "future": me.future[-1].meaning,
-            }
-            session["oracle_stories"] = {lang: story}
+            session["last_story"] = me.oracle_story
             session["last_card"] = None
             session["last_category"] = None
-
-            return render_template("index.html", oracle=oracle, story=story)
+            return render_template("index.html", oracle=oracle, story=me.oracle_story)
         else:
             return "Unknown category."
     except TarotAPIError as error:
@@ -543,11 +523,8 @@ def history(category):
     gender = session["gender"]
 
     if category == "oracle":
-        past_rows = Tarot_database.get_readings(user_name, "past")
-        present_rows = Tarot_database.get_readings(user_name, "present")
-        future_rows = Tarot_database.get_readings(user_name, "future")
-        return render_template("history.html", category="oracle", gender=gender,
-                                past_rows=past_rows, present_rows=present_rows, future_rows=future_rows)
+        groups = Tarot_database.get_oracle_groups(user_name)
+        return render_template("history.html", category="oracle", gender=gender, groups=groups)
 
     if category not in ("past", "present", "future"):
         return "Unknown category."
@@ -556,11 +533,49 @@ def history(category):
     return render_template("history.html", category=category, gender=gender, rows=rows)
     
 
+from urllib.parse import urlparse
+
 @app.route("/set_language/<lang>")
 def set_language(lang):
     if lang in TRANSLATIONS:
         session["lang"] = lang
+    next_page = request.args.get("next")
+    if next_page and next_page.startswith("/"):
+        return redirect(next_page)
     return redirect("/")
+
+
+import base64
+
+@app.route("/note/<int:reading_id>", methods=["GET", "POST"])
+def note(reading_id):
+    if "user_name" not in session:
+        return redirect("/")
+    user_name = session["user_name"]
+
+    reading = Tarot_database.get_reading_by_id(reading_id, user_name)
+    if not reading:
+        return redirect("/")
+
+    if request.method == "POST":
+        note_text = request.form.get("note_text", "")[:6000]
+        image_position_raw = request.form.get("image_position")
+        image_position = int(image_position_raw) if image_position_raw else None
+
+        note_image = reading[7]  # keep existing image by default
+
+        uploaded = request.files.get("note_image")
+        if uploaded and uploaded.filename:
+            note_image = "data:" + uploaded.mimetype + ";base64," + base64.b64encode(uploaded.read()).decode("utf-8")
+
+        if request.form.get("remove_image") == "1":
+            note_image = None
+            image_position = None
+
+        Tarot_database.save_note(reading_id, user_name, note_text, note_image, image_position)
+        return redirect(f"/history/{reading[1]}")
+
+    return render_template("note.html", reading=reading)
 
 
 if __name__ == "__main__":

@@ -183,11 +183,10 @@
 <body>
     <!-- decorative forest elements, dimmed so the space feels quiet before login -->
     <div style="position: relative; z-index: 1; margin-bottom: 15px;">
-        <a href="/set_language/en" class="button" style="padding:6px 12px; font-size:0.75em;">EN</a>
-        <a href="/set_language/he" class="button" style="padding:6px 12px; font-size:0.75em;">עב</a>
-        <a href="/set_language/uk" class="button" style="padding:6px 12px; font-size:0.75em;">УК</a>
+        <a href="/set_language/en?next={{ request.path }}" class="button" style="padding:6px 12px; font-size:0.75em;">EN</a>
+        <a href="/set_language/he?next={{ request.path }}" class="button" style="padding:6px 12px; font-size:0.75em;">עב</a>
+        <a href="/set_language/uk?next={{ request.path }}" class="button" style="padding:6px 12px; font-size:0.75em;">УК</a>
     </div>
-
     <div class="decor decor-branch-tr">
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
             <path d="M200 10 C150 20 120 40 90 70 C70 90 60 110 40 120" stroke="#39ffb0" stroke-width="2" fill="none"/>
