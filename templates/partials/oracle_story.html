@@ -1,0 +1,23 @@
+{% if story %}
+<div class="oracle-story-wrap">
+    <div class="oracle-avatar">
+        <img src="{{ url_for('static', filename='oracle_avatar.jpg') }}" alt="oracle">
+    </div>
+    <div class="oracle-bubble">
+        <div class="bubble-leaf bubble-leaf-tl"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 36 C4 20 16 4 36 4 C36 20 24 36 4 36 Z" fill="#39ffb0"/></svg></div>
+        <div class="bubble-leaf bubble-leaf-tr"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 36 C4 20 16 4 36 4 C36 20 24 36 4 36 Z" fill="#2fbf8c"/></svg></div>
+        <div class="bubble-leaf bubble-leaf-bl"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 36 C4 20 16 4 36 4 C36 20 24 36 4 36 Z" fill="#2fbf8c"/></svg></div>
+        <div class="bubble-leaf bubble-leaf-br"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 36 C4 20 16 4 36 4 C36 20 24 36 4 36 Z" fill="#39ffb0"/></svg></div>
+        <div class="bubble-leaf bubble-leaf-top1"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 36 C4 20 16 4 36 4 C36 20 24 36 4 36 Z" fill="#2fbf8c"/></svg></div>
+        <div class="bubble-leaf bubble-leaf-top2"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 36 C4 20 16 4 36 4 C36 20 24 36 4 36 Z" fill="#39ffb0"/></svg></div>
+        <div class="bubble-leaf bubble-leaf-bot1"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 36 C4 20 16 4 36 4 C36 20 24 36 4 36 Z" fill="#39ffb0"/></svg></div>
+        <div class="bubble-leaf bubble-leaf-bot2"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 36 C4 20 16 4 36 4 C36 20 24 36 4 36 Z" fill="#2fbf8c"/></svg></div>
+        <div class="bubble-leaf bubble-leaf-left1"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 36 C4 20 16 4 36 4 C36 20 24 36 4 36 Z" fill="#2fbf8c"/></svg></div>
+        <div class="bubble-leaf bubble-leaf-left2"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 36 C4 20 16 4 36 4 C36 20 24 36 4 36 Z" fill="#39ffb0"/></svg></div>
+        <div class="bubble-leaf bubble-leaf-right1"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 36 C4 20 16 4 36 4 C36 20 24 36 4 36 Z" fill="#39ffb0"/></svg></div>
+        <div class="bubble-leaf bubble-leaf-right2"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 36 C4 20 16 4 36 4 C36 20 24 36 4 36 Z" fill="#2fbf8c"/></svg></div>
+        <span class="oracle-bubble-label">// {{ t('oracle_whispers') }}</span>
+        {{ tr(story) }}
+    </div>
+</div>
+{% endif %}

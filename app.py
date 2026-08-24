@@ -69,7 +69,7 @@ def home():
     if session.get("last_oracle"):
         oracle = list(zip(session["last_oracle"], session["last_oracle_labels"]))
 
-    return render_template("index.html", card=card, category=category, oracle=oracle, story=story)
+    return render_template("home.html", card=card, category=category, oracle=oracle, story=story)
 
 
 @app.route("/login", methods=["POST"])

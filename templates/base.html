@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="{{ session.get('lang', 'en') }}" dir="{{ 'rtl' if session.get('lang') == 'he' else 'ltr' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Taro{% endblock %}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #05080a;
+            background-image:
+                radial-gradient(circle at 20% 20%, rgba(0, 255, 170, 0.03), transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(224, 164, 88, 0.03), transparent 45%);
+            color: #6b8f83;
+            font-family: 'Share Tech Mono', monospace;
+            text-align: center;
+            padding: 60px 20px;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* subtle scan lines over everything */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(0, 255, 170, 0.015),
+                rgba(0, 255, 170, 0.015) 1px,
+                transparent 2px,
+                transparent 4px
+            );
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .decor {
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.12;
+        }
+        .decor svg { display: block; }
+
+        .decor-leaf-tl     { top: -20px; left: -30px; width: 160px; transform: rotate(-15deg); }
+        .decor-leaf-br     { bottom: -30px; right: -20px; width: 200px; transform: rotate(160deg); }
+        .decor-leaf-tr2    { top: 60px; right: 40px; width: 90px; transform: rotate(60deg); opacity: 0.08; }
+        .decor-leaf-bl2    { bottom: 120px; left: 30px; width: 80px; transform: rotate(-70deg); opacity: 0.08; }
+
+        .decor-branch-tr   { top: 0; right: 0; width: 220px; opacity: 0.1; }
+        .decor-branch-tl   { top: 0; left: 0; width: 180px; opacity: 0.07; transform: scaleX(-1); }
+        .decor-branch-bl   { bottom: 0; left: 0; width: 200px; opacity: 0.08; transform: rotate(180deg); }
+
+        .decor-mushroom-bl  { bottom: 0; left: 10px; width: 90px; opacity: 0.15; }
+        .decor-mushroom-br  { bottom: 0; right: 20px; width: 70px; opacity: 0.13; }
+
+        .decor-vine-left   { top: 0; left: 0; width: 40px; height: 100vh; opacity: 0.07; }
+        .decor-vine-right  { top: 0; right: 0; width: 40px; height: 100vh; opacity: 0.07; transform: scaleX(-1); }
+
+        .decor-center {
+            top: 50%; left: 50%;
+            width: 620px;
+            transform: translate(-50%, -50%);
+            opacity: 0.025;
+        }
+
+        .decor-spore {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(0.5px);
+            opacity: 0.4;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            letter-spacing: 6px;
+            color: #2c7a5c;
+            text-shadow:
+                0 0 3px #2c7a5c,
+                0 0 10px rgba(23, 217, 163, 0.25);
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        p {
+            color: #4a6b62;
+            position: relative;
+            z-index: 1;
+        }
+
+        form {
+            margin-top: 30px;
+            display: inline-block;
+            text-align: left;
+            position: relative;
+            z-index: 1;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+            color: #b3c9c0;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+
+        input[type="text"], select {
+            width: 220px;
+            padding: 8px;
+            border-radius: 2px;
+            border: 1px solid #1f5b45;
+            background: rgba(0, 20, 15, 0.5);
+            color: #b3c9c0;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: #2c7a5c;
+        }
+
+        button {
+            background: transparent;
+            color: #4a8a6e;
+            border: 1px solid #1f5b45;
+            padding: 12px 24px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9em;
+            letter-spacing: 1px;
+            border-radius: 2px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.15s ease-in-out;
+            position: relative;
+            z-index: 1;
+        }
+
+        button:hover {
+            background: rgba(224, 164, 88, 0.05);
+            border-color: #6b5537;
+            color: #a3835a;
+        }
+
+        a.button {
+            display: inline-block;
+            background: transparent;
+            color: #4a8a6e;
+            border: 1px solid #1f5b45;
+            text-decoration: none;
+            padding: 6px 12px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75em;
+            letter-spacing: 1px;
+            border-radius: 2px;
+            margin: 3px;
+            transition: all 0.15s ease-in-out;
+        }
+
+        a.button:hover {
+            background: rgba(224, 164, 88, 0.05);
+            border-color: #6b5537;
+            color: #a3835a;
+        }
+
+        .error {
+            color: #c96b4a;
+            text-shadow: 0 0 6px rgba(201, 107, 74, 0.5);
+        }
+
+        .disclaimer {
+            font-size: 0.7em;
+            color: #4a6b62;
+            margin-top: 40px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2em; letter-spacing: 3px; }
+            .decor { display: none; }
+        }
+
+        {% block extra_style %}{% endblock %}
+    </style>
+</head>
+<body>
+    {% include "partials/lang_switch.html" %}
+    {% block decor %}{% include "partials/decor.html" %}{% endblock %}
+
+    {% block content %}{% endblock %}
+</body>
+</html>
