@@ -20,6 +20,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 app = Flask(__name__)
 app.secret_key = "change_this_to_something_random"
 
+Tarot_database.create_table()
+
 
 def render_note(note_text, note_image, image_position):
     if not note_text and not note_image:
@@ -283,6 +285,7 @@ def ask_question():
     }
     session["last_category"] = "question"
     session["last_oracle"] = None
+    session["last_oracle_labels"] = None
     session["last_story"] = ai_answer
     session["last_question_asked"] = question
 
@@ -330,6 +333,7 @@ def prediction_two():
     session["last_story"] = ai_story
     session["last_card"] = None
     session["last_category"] = "prediction"
+    session["last_question_asked"] = None
 
     return redirect("/")
 

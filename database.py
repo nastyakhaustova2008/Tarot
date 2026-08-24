@@ -22,9 +22,9 @@ def get_cursor(commit=False):
         connection.close()
 
 
-# Inside database.py create_table():
 def create_table():
     with get_cursor(commit=True) as cursor:
+        # 1. Readings Table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS readings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,8 +56,27 @@ def create_table():
         for column_name, column_type in new_columns.items():
             if column_name not in existing_columns:
                 cursor.execute(f"ALTER TABLE readings ADD COLUMN {column_name} {column_type}")
-                
-        # (keep existing oracle_stories table and translation cache table creations below)
+
+        # 2. Oracle Stories Table (Fixes the missing table error)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS oracle_stories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_name TEXT NOT NULL,
+                group_id TEXT NOT NULL,
+                story TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # 3. Translation Cache Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS translation_cache (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                original_text TEXT UNIQUE,
+                lang TEXT,
+                translated_text TEXT
+            )
+        """)
 
 
 def save_reading_full(user_name, category, card_name, meaning, orientation, group_id=None, question=None, ai_response=None, target_name=None):

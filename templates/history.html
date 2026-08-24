@@ -1,239 +1,12 @@
-<!DOCTYPE html>
-<html lang="{{ session.get('lang', 'en') }}" dir="{{ 'rtl' if session.get('lang') == 'he' else 'ltr' }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taro - History</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+{% extends "base.html" %}
 
-        * { box-sizing: border-box; }
+{% block decor %}{% include "partials/decor_history.html" %}{% endblock %}
 
-        body {
-            background-color: #05080a;
-            background-image:
-                radial-gradient(circle at 20% 20%, rgba(0, 255, 170, 0.06), transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(224, 164, 88, 0.06), transparent 45%);
-            color: #b6ffe0;
-            font-family: 'Share Tech Mono', monospace;
-            text-align: center;
-            padding: 40px 20px;
-            min-height: 100vh;
-            position: relative;
-            overflow-x: hidden;
-        }
+{% block title %}Taro - History{% endblock %}
 
-        .lang-select { position: relative; z-index: 1; margin-bottom: 15px; }
+{% block extra_style %}{% include "partials/history_theme.html" %}{% endblock %}
 
-        h1 {
-            font-size: 2.2em;
-            letter-spacing: 5px;
-            color: #39ffb0;
-            text-shadow: 0 0 5px #39ffb0, 0 0 20px #17d9a3, 0 0 40px #0fae86;
-            margin-bottom: 5px;
-            position: relative;
-            z-index: 1;
-        }
-
-        h2 {
-            margin-top: 35px;
-            font-size: 1em;
-            letter-spacing: 4px;
-            color: #e0a458;
-            text-shadow: 0 0 8px rgba(224, 164, 88, 0.55);
-            text-transform: uppercase;
-            position: relative;
-            z-index: 1;
-        }
-
-        p { color: #6fe6c9; position: relative; z-index: 1; }
-
-        .reading {
-            max-width: 500px;
-            margin: 20px auto;
-            padding: 15px 20px;
-            border: 1px solid #39ffb0;
-            border-radius: 4px;
-            text-align: left;
-            background: rgba(0, 255, 170, 0.03);
-            box-shadow: 0 0 10px rgba(57, 255, 176, 0.25), 0 0 30px rgba(224, 164, 88, 0.08);
-            position: relative;
-            z-index: 1;
-        }
-
-        html[dir="rtl"] .reading { text-align: right; }
-
-        .reading-name { font-size: 1.2em; letter-spacing: 2px; color: #39ffb0; }
-        .reading-orientation { font-style: italic; color: #e0a458; }
-        .reading-meaning { margin-top: 8px; line-height: 1.5em; color: #9fe8d6; }
-
-        .note-inline-img {
-            display: block;
-            max-width: 100%;
-            border-radius: 4px;
-            margin: 8px 0;
-            border: 1px solid #2fbf8c;
-        }
-
-        .note-block {
-            margin-top: 10px;
-            padding-top: 8px;
-            border-top: 1px dashed rgba(57, 255, 176, 0.3);
-            font-size: 0.9em;
-            color: #c9e8dd;
-            white-space: pre-wrap;
-        }
-
-        .reading-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 10px;
-        }
-
-        .group-badge {
-            font-size: 0.7em;
-            letter-spacing: 1px;
-            color: #e0a458;
-            border: 1px solid #6b5537;
-            border-radius: 10px;
-            padding: 2px 8px;
-            text-transform: uppercase;
-        }
-
-        .note-icon-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.75em;
-            letter-spacing: 1px;
-            color: #4a8a6e;
-            text-decoration: none;
-            border: 1px solid #1f5b45;
-            border-radius: 3px;
-            padding: 3px 8px;
-        }
-
-        .note-icon-link:hover { color: #a3835a; border-color: #6b5537; }
-
-        .note-icon-thumb {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 1px solid #39ffb0;
-        }
-
-        .note-icon-generic { width: 14px; height: 14px; }
-
-        .oracle-group {
-            max-width: 720px;
-            margin: 30px auto 50px;
-            padding: 20px;
-            border: 1px solid #2fbf8c;
-            border-radius: 8px;
-            position: relative;
-            z-index: 1;
-            background: rgba(0, 255, 170, 0.02);
-        }
-
-        .oracle-group-label {
-            font-size: 0.75em;
-            letter-spacing: 2px;
-            color: #e0a458;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
-
-        .oracle-story-block {
-            margin-top: 15px;
-            padding: 15px;
-            border: 1px dashed #39ffb0;
-            border-radius: 6px;
-            text-align: left;
-            color: #d9fff0;
-            line-height: 1.5em;
-        }
-
-        html[dir="rtl"] .oracle-story-block { text-align: right; }
-
-        .oracle-story-label {
-            font-size: 0.75em;
-            letter-spacing: 2px;
-            color: #e0a458;
-            text-transform: uppercase;
-            display: block;
-            margin-bottom: 8px;
-        }
-
-        a.button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-            display: inline-block;
-            background: rgba(5, 8, 10, 0.85);
-            color: #39ffb0;
-            border: 1px solid #39ffb0;
-            text-decoration: none;
-            padding: 10px 18px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.85em;
-            letter-spacing: 1px;
-            border-radius: 4px;
-            text-shadow: 0 0 4px rgba(57, 255, 176, 0.6);
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.8), 0 0 6px rgba(57, 255, 176, 0.25) inset;
-            backdrop-filter: blur(4px);
-            transition: all 0.15s ease-in-out;
-        }
-
-        html[dir="rtl"] a.button {
-            right: auto;
-            left: 20px;
-        }
-
-        a.button:hover { background: rgba(224, 164, 88, 0.1); border-color: #e0a458; color: #e0a458; }
-
-        a.lang-btn {
-            display: inline-block;
-            background: transparent;
-            color: #39ffb0;
-            border: 1px solid #39ffb0;
-            text-decoration: none;
-            padding: 6px 12px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.75em;
-            letter-spacing: 1px;
-            border-radius: 2px;
-            margin: 3px;
-        }
-        a.lang-btn:hover { border-color: #e0a458; color: #e0a458; }
-
-        @media (max-width: 600px) {
-            h1 { font-size: 1.6em; letter-spacing: 3px; }
-            .reading, .oracle-group { max-width: 92%; }
-
-            a.button {
-                bottom: 12px;
-                right: 12px;
-                padding: 8px 14px;
-                font-size: 0.75em;
-            }
-
-            html[dir="rtl"] a.button {
-                right: auto;
-                left: 12px;
-            }
-        }
-    </style>
-</head>
-<body>
-
-    <div class="lang-select">
-        <a href="/set_language/en?next={{ request.path }}" class="lang-btn">EN</a>
-        <a href="/set_language/he?next={{ request.path }}" class="lang-btn">עב</a>
-        <a href="/set_language/uk?next={{ request.path }}" class="lang-btn">УК</a>
-    </div>
+{% block content %}
 
     {% if gender == "man" %}
         <h1>{{ t('sir') }} {{ session['user_name'] }}, {{ t('your_' + category) }}</h1>
@@ -256,14 +29,13 @@
                         <div class="reading-name">{{ tr(row[2]) }}</div>
                         <div class="reading-orientation">{{ t(row[4]) }}</div>
                         <div class="reading-meaning">{{ tr(row[3]) }}</div>
-
                         <div class="reading-footer">
                             <span class="group-badge">{{ t('oracle') }}</span>
                             <a class="note-icon-link" href="/note/{{ row[0] }}">
                                 {% if row[6] %}
                                     <img class="note-icon-thumb" src="{{ row[6] }}" alt="note">
                                 {% elif row[5] %}
-                                    <svg class="note-icon-generic" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#4a8a6e" stroke-width="2"/></svg>
+                                    <svg class="note-icon-generic" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#a35a5a" stroke-width="2"/></svg>
                                 {% endif %}
                                 {{ t('edit_note') if (row[5] or row[6]) else t('add_note') }}
                             </a>
@@ -290,7 +62,6 @@
             {% for group in two_person_groups %}
             <div class="oracle-group">
                 <div class="oracle-group-label">// {{ t('prediction_for_two') }}: {{ group.names }}</div>
-                
                 {% for person_row in [group.person1, group.person2] %}
                 <h2>{{ person_row[11] }} ({{ tr(person_row[2]) }})</h2>
                 <div class="reading">
@@ -305,7 +76,6 @@
                     </div>
                 </div>
                 {% endfor %}
-
                 {% if group.story %}
                 <div class="oracle-story-block">
                     <span class="oracle-story-label">// {{ t('your_prediction') }}</span>
@@ -322,34 +92,30 @@
 
         {% if rows %}
             {% for row in rows %}
-            {# row = (id, card_name, meaning, orientation, group_id, note_text, note_image, note_image_position, question, ai_response) #}
             <div class="reading">
                 {% if category == "yes_no" %}
-                    <div class="reading-name" style="color: #39ffb0; font-size: 1.1em;">
+                    <div class="reading-name" style="color: #ff4d4d; font-size: 1.1em;">
                         {{ row[8] if row[8] else t('yes_no_history') }}
                     </div>
                     <div class="reading-meaning" style="font-size: 1.3em; font-weight: bold; color: #e0a458; margin-top: 8px;">
                         {{ t(row[9].lower()) if row[9] else tr(row[2]) }}
                     </div>
-
                 {% elif category == "question" %}
                     <div class="reading-name">{{ t('question_asked') }} {{ row[8] }}</div>
                     <div class="reading-orientation">{{ tr(row[1]) }} ({{ t(row[3]) }})</div>
                     <div class="reading-meaning"><strong>{{ t('answer_for_question') }}</strong> {{ tr(row[9]) }}</div>
-
                 {% else %}
                     <div class="reading-name">{{ tr(row[1]) }}</div>
                     <div class="reading-orientation">{{ t(row[3]) }}</div>
                     <div class="reading-meaning">{{ tr(row[2]) }}</div>
                 {% endif %}
-
                 <div class="reading-footer">
                     <span></span>
                     <a class="note-icon-link" href="/note/{{ row[0] }}">
                         {% if row[6] %}
                             <img class="note-icon-thumb" src="{{ row[6] }}" alt="note">
                         {% elif row[5] %}
-                            <svg class="note-icon-generic" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#4a8a6e" stroke-width="2"/></svg>
+                            <svg class="note-icon-generic" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#a35a5a" stroke-width="2"/></svg>
                         {% endif %}
                         {{ t('edit_note') if (row[5] or row[6]) else t('add_note') }}
                     </a>
@@ -362,6 +128,6 @@
 
     {% endif %}
 
-    <a class="button" href="/">{{ t('back_to_taro') }}</a>
-</body>
-</html>
+    {% include "partials/leaf_nav.html" %}
+
+{% endblock %}

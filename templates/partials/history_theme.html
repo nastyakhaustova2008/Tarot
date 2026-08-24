@@ -1,0 +1,221 @@
+body {
+    background-image:
+        radial-gradient(circle at 20% 20%, rgba(0, 255, 170, 0.05), transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(224, 164, 88, 0.05), transparent 45%),
+        radial-gradient(circle at 50% 90%, rgba(201, 82, 74, 0.03), transparent 40%);
+    color: #b6e0c9;
+}
+
+body::before {
+    background: repeating-linear-gradient(
+        to bottom,
+        rgba(0, 255, 170, 0.02),
+        rgba(0, 255, 170, 0.02) 1px,
+        transparent 2px,
+        transparent 4px
+    );
+}
+
+.decor { opacity: 0.28; }
+.decor-leaf-tr2, .decor-leaf-bl2 { opacity: 0.18; }
+.decor-leaf-midL, .decor-leaf-midR { opacity: 0.14; }
+.decor-leaf-midL { top: 45%; left: 5px; width: 70px; transform: rotate(20deg); }
+.decor-leaf-midR { top: 55%; right: 10px; width: 75px; transform: rotate(-30deg); }
+.decor-branch-tr { opacity: 0.2; }
+.decor-branch-tl { opacity: 0.14; }
+.decor-branch-bl { opacity: 0.16; }
+.decor-mushroom-bl { opacity: 0.32; }
+.decor-mushroom-b2 { bottom: 0; left: 90px; width: 55px; opacity: 0.24; }
+.decor-mushroom-br { opacity: 0.28; }
+.decor-mushroom-red { bottom: 0; right: 130px; width: 50px; opacity: 0.3; }
+.decor-vine-left, .decor-vine-right { opacity: 0.15; }
+.decor-center { opacity: 0.05; }
+
+.decor-moss-eave-left  { top: 0; left: 0; width: 260px; opacity: 0.3; }
+.decor-moss-eave-right { top: 0; right: 0; width: 260px; opacity: 0.3; transform: scaleX(-1); }
+.decor-berries-l { top: 22%; left: 25px; width: 60px; opacity: 0.5; }
+.decor-berries-r { top: 30%; right: 30px; width: 60px; opacity: 0.5; transform: scaleX(-1); }
+
+h1 {
+    color: #39ffb0;
+    text-shadow:
+        0 0 4px #39ffb0,
+        0 0 16px rgba(23, 217, 163, 0.35),
+        0 0 30px rgba(201, 82, 74, 0.18);
+}
+
+p { color: #7ab89c; }
+
+h2 {
+    margin-top: 35px;
+    font-size: 1em;
+    letter-spacing: 4px;
+    color: #e0a458;
+    text-shadow: 0 0 8px rgba(224, 164, 88, 0.55);
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+}
+
+.reading {
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 15px 20px;
+    border: 1px solid #1f5b45;
+    border-top: 2px solid #a8382f;
+    border-radius: 4px;
+    text-align: left;
+    background: rgba(0, 255, 170, 0.03);
+    box-shadow: 0 0 10px rgba(57, 255, 176, 0.2), 0 0 20px rgba(201, 82, 74, 0.08);
+    position: relative;
+    z-index: 1;
+}
+html[dir="rtl"] .reading { text-align: right; }
+
+.reading-name { font-size: 1.2em; letter-spacing: 2px; color: #39ffb0; }
+.reading-orientation { font-style: italic; color: #e0a458; }
+.reading-meaning { margin-top: 8px; line-height: 1.5em; color: #b6e0c9; }
+
+.reading-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.group-badge {
+    font-size: 0.7em;
+    letter-spacing: 1px;
+    color: #c9524a;
+    border: 1px solid #5b2c26;
+    border-radius: 10px;
+    padding: 2px 8px;
+    text-transform: uppercase;
+}
+
+.note-icon-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75em;
+    letter-spacing: 1px;
+    color: #6fa387;
+    text-decoration: none;
+    border: 1px solid #1f5b45;
+    border-radius: 3px;
+    padding: 3px 8px;
+}
+.note-icon-link:hover { color: #e0a458; border-color: #6b5537; }
+
+.note-icon-thumb {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #39ffb0;
+}
+.note-icon-generic { width: 14px; height: 14px; }
+
+.oracle-group {
+    max-width: 720px;
+    margin: 30px auto 50px;
+    padding: 20px;
+    border: 1px solid #1f5b45;
+    border-left: 2px solid #a8382f;
+    border-radius: 8px;
+    position: relative;
+    z-index: 1;
+    background: rgba(0, 255, 170, 0.015);
+}
+
+.oracle-group-label {
+    font-size: 0.75em;
+    letter-spacing: 2px;
+    color: #e0a458;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.oracle-story-block {
+    margin-top: 15px;
+    padding: 15px;
+    border: 1px dashed #2c7a5c;
+    border-radius: 6px;
+    text-align: left;
+    color: #cdeede;
+    line-height: 1.5em;
+}
+html[dir="rtl"] .oracle-story-block { text-align: right; }
+
+.oracle-story-label {
+    font-size: 0.75em;
+    letter-spacing: 2px;
+    color: #e0a458;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* leaf/mushroom nav menu */
+.nav-toggle-checkbox { display: none; }
+
+.nav-toggle-icon {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1001;
+    width: 56px;
+    height: 56px;
+    cursor: pointer;
+    filter: drop-shadow(0 0 6px rgba(57, 255, 176, 0.6));
+    transition: transform 0.2s ease;
+}
+.nav-toggle-icon svg { width: 100%; height: 100%; }
+.nav-toggle-icon:hover { transform: scale(1.08); }
+html[dir="rtl"] .nav-toggle-icon { right: auto; left: 20px; }
+
+.nav-menu {
+    position: fixed;
+    bottom: 85px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+html[dir="rtl"] .nav-menu { right: auto; left: 20px; align-items: flex-start; }
+
+.nav-toggle-checkbox:checked ~ .nav-menu { max-height: 400px; opacity: 1; pointer-events: auto; }
+
+.nav-menu a {
+    background: rgba(5, 10, 8, 0.9);
+    color: #39ffb0;
+    border: 1px solid #39ffb0;
+    text-decoration: none;
+    padding: 8px 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8em;
+    letter-spacing: 1px;
+    border-radius: 4px;
+    text-shadow: 0 0 4px rgba(57, 255, 176, 0.6);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+    transition: all 0.15s ease-in-out;
+}
+.nav-menu a:hover { background: rgba(224, 164, 88, 0.1); border-color: #e0a458; color: #e0a458; }
+.nav-menu a.nav-menu-home { border-color: #e0a458; color: #e0a458; margin-top: 4px; }
+
+@media (max-width: 600px) {
+    .reading, .oracle-group { max-width: 92%; }
+    .decor-moss-eave-left, .decor-moss-eave-right { width: 180px; }
+    .nav-toggle-icon { bottom: 12px; right: 12px; width: 48px; height: 48px; }
+    html[dir="rtl"] .nav-toggle-icon { right: auto; left: 12px; }
+    .nav-menu { bottom: 70px; right: 12px; }
+    html[dir="rtl"] .nav-menu { right: auto; left: 12px; }
+}
