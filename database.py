@@ -57,7 +57,7 @@ def create_table():
             if column_name not in existing_columns:
                 cursor.execute(f"ALTER TABLE readings ADD COLUMN {column_name} {column_type}")
 
-        # 2. Oracle Stories Table (Fixes the missing table error)
+        # 2. Oracle Stories Table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS oracle_stories (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,15 +68,29 @@ def create_table():
             )
         """)
 
-        # 3. Translation Cache Table
+        # 3. Translation Cache Table & Auto-Migration
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS translation_cache (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                original_text TEXT UNIQUE,
+                text TEXT,
                 lang TEXT,
-                translated_text TEXT
+                translated TEXT,
+                PRIMARY KEY (text, lang)
             )
         """)
+
+        # Check existing column names in translation_cache
+        cache_cols = [row[1] for row in cursor.execute("PRAGMA table_info(translation_cache)").fetchall()]
+        if "translated" not in cache_cols:
+            # Rebuild table with correct column structure if old table exists
+            cursor.execute("DROP TABLE translation_cache")
+            cursor.execute("""
+                CREATE TABLE translation_cache (
+                    text TEXT,
+                    lang TEXT,
+                    translated TEXT,
+                    PRIMARY KEY (text, lang)
+                )
+            """)
 
 
 def save_reading_full(user_name, category, card_name, meaning, orientation, group_id=None, question=None, ai_response=None, target_name=None):
