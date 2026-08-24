@@ -367,13 +367,14 @@ def translate_meaning(text, lang):
         target = LANG_CODE_MAP.get(lang, lang)
         translated = GoogleTranslator(source="en", target=target).translate(text)
 
-        # Reject obviously broken results (Google error pages returned as "success")
         if not translated or "Error 500" in translated or "Server Error" in translated or len(translated) > len(text) * 4:
+            print("TRANSLATE REJECTED RESULT:", translated)
             return text
 
         _translation_cache[cache_key] = translated
         return translated
-    except Exception:
+    except Exception as error:
+        print("TRANSLATE FAILED:", repr(error))
         return text
 
 def tr(text):
