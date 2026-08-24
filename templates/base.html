@@ -189,8 +189,29 @@
         }
 
         @media (max-width: 600px) {
-            h1 { font-size: 2em; letter-spacing: 3px; }
-            .decor { display: none; }
+            h1 { font-size: 1.8em; letter-spacing: 3px; }
+    
+    /* Keep decor elements visible and scale them down for smaller screens */
+            .decor { 
+                display: block; 
+            }
+
+            .decor-leaf-tl     { width: 90px; top: -10px; left: -15px; }
+            .decor-leaf-br     { width: 110px; bottom: -15px; right: -10px; }
+            .decor-leaf-tr2    { width: 50px; top: 40px; right: 15px; }
+            decor-leaf-bl2    { width: 45px; bottom: 80px; left: 10px; }
+
+            .decor-branch-tr   { width: 120px; }
+            .decor-branch-tl   { width: 100px; }
+            .decor-branch-bl   { width: 110px; }
+
+            .decor-mushroom-bl { width: 50px; }
+            .decor-mushroom-br { width: 40px; }
+
+            .decor-vine-left   { width: 20px; }
+            .decor-vine-right  { width: 20px; }
+
+            .decor-center      { width: 90vw; }
         }
 
         {% block extra_style %}{% endblock %}

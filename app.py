@@ -187,9 +187,12 @@ def draw(category):
 def set_language(lang):
     if lang in TRANSLATIONS:
         session["lang"] = lang
-    next_page = request.args.get("next")
-    if next_page and next_page.startswith("/"):
-        return redirect(next_page)
+    next_page = request.args.get("next") or request.referrer
+    if next_page:
+        parsed = urlparse(next_page)
+        # Prevent open redirect vulnerabilities
+        if not parsed.netloc and parsed.path.startswith("/"):
+            return redirect(next_page)
     return redirect("/")
 
 
@@ -208,7 +211,7 @@ def note(reading_id):
         image_position_raw = request.form.get("image_position")
         image_position = int(image_position_raw) if image_position_raw else None
 
-        note_image = reading[7]  # keep existing image by default
+        note_image = reading[7]
 
         uploaded = request.files.get("note_image")
         if uploaded and uploaded.filename:
@@ -221,7 +224,17 @@ def note(reading_id):
         Tarot_database.save_note(reading_id, user_name, note_text, note_image, image_position)
         return redirect(f"/history/{reading[1]}")
 
-    return render_template("note.html", reading=reading)
+    card_raw = reading[2] if len(reading) > 2 else None
+    card_translated = tr(card_raw) if card_raw else None
+
+    meta_info = {
+        "category": reading[1],
+        "card_name": card_translated,
+        "question": reading[9] if len(reading) > 9 else None,
+        "target_name": reading[11] if len(reading) > 11 else None,
+    }
+
+    return render_template("note.html", reading=reading, meta_info=meta_info)
 
 
 @app.route("/draw_yes_no", methods=["POST"])
