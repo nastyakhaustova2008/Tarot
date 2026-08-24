@@ -4,6 +4,9 @@ from urllib.parse import urlparse
 from flask import Flask, render_template, session, redirect, request
 from markupsafe import Markup, escape
 from dotenv import load_dotenv
+from card_model import Card
+from tarot_ai import generate_question_answer, generate_two_person_prediction
+import random
 
 import database as Tarot_database
 from exceptions import TarotAPIError
@@ -178,25 +181,6 @@ def draw(category):
         return redirect("/")
 
 
-@app.route("/history/<category>")
-def history(category):
-    if "user_name" not in session:
-        return redirect("/")
-
-    user_name = session["user_name"]
-    gender = session["gender"]
-
-    if category == "oracle":
-        groups = Tarot_database.get_oracle_groups(user_name)
-        return render_template("history.html", category="oracle", gender=gender, groups=groups)
-
-    if category not in ("past", "present", "future"):
-        return "Unknown category."
-
-    rows = Tarot_database.get_readings(user_name, category)
-    return render_template("history.html", category=category, gender=gender, rows=rows)
-
-
 @app.route("/set_language/<lang>")
 def set_language(lang):
     if lang in TRANSLATIONS:
@@ -236,6 +220,138 @@ def note(reading_id):
         return redirect(f"/history/{reading[1]}")
 
     return render_template("note.html", reading=reading)
+
+
+@app.route("/draw_yes_no", methods=["POST"])
+def draw_yes_no():
+    if "user_name" not in session:
+        return redirect("/")
+
+    question = request.form.get("question", "").strip()
+    answer = "YES" if random.random() < 0.5 else "NO"
+
+    Tarot_database.save_reading_full(
+        session["user_name"],  # user_name
+        "yes_no",              # category
+        "Yes / No",            # card_name
+        answer,                # meaning
+        "upright",             # orientation
+        None,                  # group_id
+        question,              # question
+        answer                 # ai_response
+    )
+
+    session["last_card"] = None
+    session["last_oracle"] = None
+    session["last_yes_no_result"] = {"question": question, "answer": answer}
+    session["last_category"] = "yes_no"
+    session["last_story"] = None
+
+    return redirect("/")
+
+
+@app.route("/ask_question", methods=["POST"])
+def ask_question():
+    if "user_name" not in session:
+        return redirect("/")
+
+    question = request.form.get("question", "").strip()
+    lang = session.get("lang", "en")
+    me = User(session["user_name"], session["gender"])
+    me.get_present()
+    card = me.present[-1]
+
+    ai_answer = generate_question_answer(question, card.card_name, card.meaning, card.orientation, lang)
+
+    Tarot_database.save_reading_full(
+        user_name=session["user_name"],
+        category="question",
+        card_name=card.card_name,
+        meaning=card.meaning,
+        orientation=card.orientation,
+        question=question,
+        ai_response=ai_answer
+    )
+
+    session["last_card"] = {
+        "card_name": card.card_name,
+        "meaning": card.meaning,
+        "orientation": card.orientation,
+        "image_filename": card.image_filename,
+    }
+    session["last_category"] = "question"
+    session["last_oracle"] = None
+    session["last_story"] = ai_answer
+    session["last_question_asked"] = question
+
+    return redirect("/")
+
+
+@app.route("/prediction_two", methods=["POST"])
+def prediction_two():
+    if "user_name" not in session:
+        return redirect("/")
+
+    name1 = request.form.get("name1", "").strip()
+    name2 = request.form.get("name2", "").strip()
+    lang = session.get("lang", "en")
+
+    me = User(session["user_name"], session["gender"])
+    me.get_oracle()
+    card1, card2 = me.past[-1], me.present[-1]
+
+    ai_story = generate_two_person_prediction(
+        name1, card1.card_name, card1.meaning, card1.orientation,
+        name2, card2.card_name, card2.meaning, card2.orientation,
+        lang
+    )
+
+    gid = Tarot_database.new_group_id()
+
+    Tarot_database.save_reading_full(
+        session["user_name"], "two_person", card1.card_name, card1.meaning,
+        card1.orientation, group_id=gid, question=f"{name1} & {name2}",
+        ai_response=ai_story, target_name=name1
+    )
+    Tarot_database.save_reading_full(
+        session["user_name"], "two_person", card2.card_name, card2.meaning,
+        card2.orientation, group_id=gid, question=f"{name1} & {name2}",
+        ai_response=ai_story, target_name=name2
+    )
+
+    session["last_oracle"] = [
+        {"card_name": card1.card_name, "meaning": card1.meaning, "orientation": card1.orientation, "image_filename": card1.image_filename},
+        {"card_name": card2.card_name, "meaning": card2.meaning, "orientation": card2.orientation, "image_filename": card2.image_filename},
+    ]
+    session["last_oracle_labels"] = [name1, name2]
+    session["last_story"] = ai_story
+    session["last_card"] = None
+    session["last_category"] = "prediction"
+
+    return redirect("/")
+
+
+@app.route("/history/<category>")
+def history(category):
+    if "user_name" not in session:
+        return redirect("/")
+
+    user_name = session["user_name"]
+    gender = session["gender"]
+
+    if category == "oracle":
+        groups = Tarot_database.get_oracle_groups(user_name)
+        return render_template("history.html", category="oracle", gender=gender, groups=groups)
+
+    if category == "two_person":
+        groups = Tarot_database.get_two_person_groups(user_name)
+        return render_template("history.html", category="two_person", gender=gender, two_person_groups=groups)
+
+    if category not in ("past", "present", "future", "yes_no", "question"):
+        return "Unknown category."
+
+    rows = Tarot_database.get_readings(user_name, category)
+    return render_template("history.html", category=category, gender=gender, rows=rows)
 
 
 if __name__ == "__main__":

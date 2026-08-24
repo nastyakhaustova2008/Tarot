@@ -22,6 +22,7 @@ def get_cursor(commit=False):
         connection.close()
 
 
+# Inside database.py create_table():
 def create_table():
     with get_cursor(commit=True) as cursor:
         cursor.execute("""
@@ -31,33 +32,69 @@ def create_table():
                 category TEXT,
                 card_name TEXT,
                 meaning TEXT,
-                orientation TEXT
+                orientation TEXT,
+                group_id TEXT,
+                note_text TEXT,
+                note_image TEXT,
+                note_image_position INTEGER,
+                question TEXT,
+                ai_response TEXT,
+                target_name TEXT
             )
         """)
 
-        # Migration: add new columns if this is an older database that doesn't have them yet.
-        # Safe to run every time the app starts — it only adds columns that are missing.
         existing_columns = [row[1] for row in cursor.execute("PRAGMA table_info(readings)").fetchall()]
         new_columns = {
             "group_id": "TEXT",
             "note_text": "TEXT",
             "note_image": "TEXT",
             "note_image_position": "INTEGER",
+            "question": "TEXT",
+            "ai_response": "TEXT",
+            "target_name": "TEXT",
         }
         for column_name, column_type in new_columns.items():
             if column_name not in existing_columns:
                 cursor.execute(f"ALTER TABLE readings ADD COLUMN {column_name} {column_type}")
+                
+        # (keep existing oracle_stories table and translation cache table creations below)
 
+
+def save_reading_full(user_name, category, card_name, meaning, orientation, group_id=None, question=None, ai_response=None, target_name=None):
+    with get_cursor(commit=True) as cursor:
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS oracle_stories (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_name TEXT,
-                group_id TEXT,
-                story TEXT
-            )
-        """)
+            INSERT INTO readings (user_name, category, card_name, meaning, orientation, group_id, question, ai_response, target_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_name, category, card_name, meaning, orientation, group_id, question, ai_response, target_name))
+        return cursor.lastrowid
 
-        create_translation_cache_table(cursor)
+
+def get_two_person_groups(user_name):
+    with get_cursor() as cursor:
+        cursor.execute("""
+            SELECT DISTINCT group_id FROM readings
+            WHERE user_name = ? AND category = 'two_person' AND group_id IS NOT NULL
+            ORDER BY id DESC
+        """, (user_name,))
+        group_ids = [row[0] for row in cursor.fetchall()]
+
+        groups = []
+        for gid in group_ids:
+            cursor.execute("""
+                SELECT id, category, card_name, meaning, orientation, group_id, note_text, note_image, note_image_position, question, ai_response, target_name
+                FROM readings
+                WHERE user_name = ? AND group_id = ?
+            """, (user_name, gid))
+            rows = cursor.fetchall()
+            if len(rows) >= 2:
+                groups.append({
+                    "group_id": gid,
+                    "person1": rows[0],
+                    "person2": rows[1],
+                    "story": rows[0][10],  # ai_response
+                    "names": rows[0][9],   # question field holds "Name1 & Name2"
+                })
+        return groups
 
 
 def new_group_id():
@@ -85,11 +122,9 @@ def save_oracle_story(user_name, group_id, story):
 
 
 def get_readings(user_name, category):
-    """Returns readings for a single category (past, present, or future),
-    newest first, including note and group info for the history page."""
     with get_cursor() as cursor:
         cursor.execute("""
-            SELECT id, card_name, meaning, orientation, group_id, note_text, note_image, note_image_position
+            SELECT id, card_name, meaning, orientation, group_id, note_text, note_image, note_image_position, question, ai_response
             FROM readings
             WHERE user_name = ? AND category = ?
             ORDER BY id DESC

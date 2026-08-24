@@ -134,8 +134,15 @@
         margin: 6px;
         text-decoration: none;
         display: inline-block;
+        background: transparent;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 0.9em;
+        letter-spacing: 1px;
+        border-radius: 2px;
+        cursor: pointer;
         text-shadow: 0 0 4px rgba(57, 255, 176, 0.6);
         box-shadow: 0 0 6px rgba(57, 255, 176, 0.25) inset;
+        transition: all 0.15s ease-in-out;
     }
 
     button:hover, a.button:hover {
@@ -243,6 +250,39 @@
     .bubble-leaf-right1 { top: 25%; right: -8px; width: 16px; transform: rotate(-90deg); opacity: 0.55; }
     .bubble-leaf-right2 { top: 65%; right: -6px; width: 14px; transform: rotate(-70deg); opacity: 0.5; }
 
+    /* Modal Styling */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0; top: 0; width: 100%; height: 100%;
+        background-color: rgba(5, 8, 10, 0.85);
+        backdrop-filter: blur(5px);
+    }
+
+    .modal-content {
+        background: #0a1412;
+        border: 1px solid #39ffb0;
+        margin: 15% auto;
+        padding: 25px;
+        width: 90%;
+        max-width: 400px;
+        border-radius: 4px;
+        box-shadow: 0 0 20px rgba(57, 255, 176, 0.3);
+        text-align: center;
+    }
+
+    .modal-content input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 12px;
+        margin-bottom: 18px;
+        background: rgba(0, 20, 15, 0.8);
+        border: 1px solid #39ffb0;
+        color: #b6ffe0;
+        font-family: 'Share Tech Mono', monospace;
+    }
+
     @media (max-width: 600px) {
         .card-box img { width: 140px; }
         .oracle-row { flex-direction: column; }
@@ -259,6 +299,9 @@
         <a class="button" href="/draw/present">{{ t('present') }}</a>
         <a class="button" href="/draw/future">{{ t('future') }}</a>
         <a class="button" href="/draw/oracle">{{ t('oracle') }}</a>
+        <button type="button" onclick="openModal('modalYesNo')">{{ t('ask_yes_no') }}</button>
+        <button type="button" onclick="openModal('modalQuestion')">{{ t('ask_question') }}</button>
+        <button type="button" onclick="openModal('modalTwo')">{{ t('prediction_for_two') }}</button>
     </div>
 
     <div class="section-label">// {{ t('history_label') }}</div>
@@ -267,7 +310,59 @@
         <a class="button" href="/history/present">{{ t('present') }}</a>
         <a class="button" href="/history/future">{{ t('future') }}</a>
         <a class="button" href="/history/oracle">{{ t('oracle') }}</a>
+        <a class="button" href="/history/yes_no">{{ t('yes_no_history') }}</a>
+        <a class="button" href="/history/question">{{ t('question_history') }}</a>
+        <a class="button" href="/history/two_person">{{ t('two_person_history') }}</a>
     </div>
+
+    <!-- Hidden Modals -->
+    <div id="modalYesNo" class="modal">
+        <div class="modal-content">
+            <h3>{{ t('ask_yes_no') }}</h3>
+            <form action="/draw_yes_no" method="POST">
+                <input type="text" name="question" placeholder="{{ t('type_your_question') }}" required>
+                <div>
+                    <button type="submit">{{ t('submit') }}</button>
+                    <button type="button" onclick="closeModal('modalYesNo')">{{ t('close') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalQuestion" class="modal">
+        <div class="modal-content">
+            <h3>{{ t('ask_question') }}</h3>
+            <form action="/ask_question" method="POST">
+                <input type="text" name="question" placeholder="{{ t('type_your_question') }}" required>
+                <div>
+                    <button type="submit">{{ t('submit') }}</button>
+                    <button type="button" onclick="closeModal('modalQuestion')">{{ t('close') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalTwo" class="modal">
+        <div class="modal-content">
+            <h3>{{ t('prediction_for_two') }}</h3>
+            <form action="/prediction_two" method="POST">
+                <input type="text" name="name1" placeholder="{{ t('enter_name_1') }}" required>
+                <input type="text" name="name2" placeholder="{{ t('enter_name_2') }}" required>
+                <div>
+                    <button type="submit">{{ t('submit') }}</button>
+                    <button type="button" onclick="closeModal('modalTwo')">{{ t('close') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Yes/No Output Block -->
+    {% if session.get('last_yes_no_result') and session.get('last_category') == 'yes_no' %}
+        <div class="reading" style="max-width: 400px; margin: 25px auto; text-align: center; border: 1px solid #39ffb0; padding: 20px; background: rgba(0,255,170,0.03);">
+            <p><strong>{{ t('question_asked') }}</strong> "{{ session['last_yes_no_result']['question'] }}"</p>
+            <h2 style="font-size: 2.2em; color: #39ffb0; margin-top: 10px;">{{ session['last_yes_no_result']['answer'] }}</h2>
+        </div>
+    {% endif %}
 
     {% if card %}
         {{ card_box(card, category) }}
@@ -287,14 +382,29 @@
     <p class="card-meaning" style="color: #ff6b6b;">&gt; ERROR: {{ error_message }}</p>
     {% endif %}
 
-    {% if card or oracle %}
+    {% if card or oracle or story or session.get('last_yes_no_result') %}
     <p class="greeting">
         &gt; {{ t('sir') if session['gender'] == 'man' else t('lady') }} {{ session['user_name'] }},
-        {{ t('your_' + category) if card else t('your_oracle') }}
+        {% if session.get('last_category') == 'question' %}
+            {{ t('your_answer') }}
+        {% elif session.get('last_category') == 'prediction' or session.get('last_category') == 'two_person' %}
+            {{ t('your_prediction') }}
+        {% elif session.get('last_category') == 'yes_no' %}
+            {{ t('your_yes_no') }}
+        {% elif card %}
+            {{ t('your_' + category) }}
+        {% else %}
+            {{ t('your_oracle') }}
+        {% endif %}
     </p>
     {% endif %}
 
     <p class="disclaimer">{{ t('disclaimer') }}</p>
 
     <a class="logout" href="/logout">[ {{ t('logout') }} ]</a>
+
+    <script>
+        function openModal(id) { document.getElementById(id).style.display = 'block'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    </script>
 {% endblock %}
