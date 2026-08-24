@@ -487,7 +487,7 @@
         {% if card.image_filename %}
         <img src="{{ url_for('static', filename=card.image_filename) }}" alt="{{ card.card_name }}">
         {% endif %}
-        <div class="card-name">{{ tr(card.card_name) }} ({{ t(card.orientation) }})</div>
+        <div class="card-name">{{ card.card_name }} ({{ t(card.orientation) }})</div>
         <div class="card-meaning">{{ tr(card.meaning) }}</div>
         <div class="card-category">{{ t(category) }}</div>
     </div>

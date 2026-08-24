@@ -360,18 +360,20 @@ _translation_cache = {}
 def translate_meaning(text, lang):
     if lang == "en":
         return text
-    cache_key = (text, lang)
-    if cache_key in _translation_cache:
-        return _translation_cache[cache_key]
+
+    cached = Tarot_database.get_cached_translation(text, lang)
+    if cached:
+        return cached
+
     try:
         target = LANG_CODE_MAP.get(lang, lang)
-        translated = MyMemoryTranslator(source="en-US", target=target).translate(text)
+        translated = MyMemoryTranslator(source="en-US", target=target, email="nastyakhaustova2008@gmail.com").translate(text)
 
         if not translated or "Error 500" in translated or "Server Error" in translated or len(translated) > len(text) * 4:
             print("TRANSLATE REJECTED RESULT:", translated, flush=True)
             return text
 
-        _translation_cache[cache_key] = translated
+        Tarot_database.save_cached_translation(text, lang, translated)
         return translated
     except Exception as error:
         print("TRANSLATE FAILED:", repr(error), flush=True)
@@ -463,7 +465,8 @@ def draw(category):
             session["last_category"] = "past"
             session["last_oracle"] = None
             session["last_story"] = None
-            return render_template("index.html", card=card, category="past")
+            return redirect("/")
+
         elif category == "present":
             me.get_present()
             card = me.present[-1]
@@ -476,7 +479,8 @@ def draw(category):
             session["last_category"] = "present"
             session["last_oracle"] = None
             session["last_story"] = None
-            return render_template("index.html", card=card, category="present")
+            return redirect("/")
+
         elif category == "future":
             me.get_future()
             card = me.future[-1]
@@ -489,7 +493,8 @@ def draw(category):
             session["last_category"] = "future"
             session["last_oracle"] = None
             session["last_story"] = None
-            return render_template("index.html", card=card, category="future")
+            return redirect("/")
+
         elif category == "oracle":
             me.get_oracle()
             oracle = [
@@ -510,11 +515,14 @@ def draw(category):
             session["last_story"] = me.oracle_story
             session["last_card"] = None
             session["last_category"] = None
-            return render_template("index.html", oracle=oracle, story=me.oracle_story)
+            return redirect("/")
+
         else:
             return "Unknown category."
+
     except TarotAPIError as error:
-        return render_template("index.html", error_message=str(error))
+        session["draw_error"] = str(error)
+        return redirect("/")
 
 @app.route("/history/<category>")
 def history(category):

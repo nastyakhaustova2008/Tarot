@@ -43,7 +43,7 @@ def create_table():
             story TEXT
         )
     """)
-
+    create_translation_cache_table(cursor)
     connection.commit()
     connection.close()
 
@@ -180,3 +180,30 @@ def limit_readings(user_name, category, max_rows):
     connection.commit()
     connection.close()
 
+def create_translation_cache_table(cursor):
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS translation_cache (
+            text TEXT,
+            lang TEXT,
+            translated TEXT,
+            PRIMARY KEY (text, lang)
+        )
+    """)
+
+def get_cached_translation(text, lang):
+    connection = create_connection()
+    cursor = connection.cursor()
+    cursor.execute("SELECT translated FROM translation_cache WHERE text = ? AND lang = ?", (text, lang))
+    row = cursor.fetchone()
+    connection.close()
+    return row[0] if row else None
+
+def save_cached_translation(text, lang, translated):
+    connection = create_connection()
+    cursor = connection.cursor()
+    cursor.execute("""
+        INSERT OR REPLACE INTO translation_cache (text, lang, translated)
+        VALUES (?, ?, ?)
+    """, (text, lang, translated))
+    connection.commit()
+    connection.close()
