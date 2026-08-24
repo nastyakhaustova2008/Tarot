@@ -360,7 +360,7 @@
     {% if session.get('last_yes_no_result') and session.get('last_category') == 'yes_no' %}
         <div class="reading" style="max-width: 400px; margin: 25px auto; text-align: center; border: 1px solid #39ffb0; padding: 20px; background: rgba(0,255,170,0.03);">
             <p><strong>{{ t('question_asked') }}</strong> "{{ session['last_yes_no_result']['question'] }}"</p>
-            <h2 style="font-size: 2.2em; color: #39ffb0; margin-top: 10px;">{{ session['last_yes_no_result']['answer'] }}</h2>
+            <h2 style="font-size: 2.2em; color: #39ffb0; margin-top: 10px;">{{ t(session['last_yes_no_result']['answer'].lower()) }}</h2>
         </div>
     {% endif %}
 

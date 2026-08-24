@@ -61,6 +61,8 @@ TRANSLATIONS = {
         "your_answer": "your answer",
         "your_prediction": "your prediction",
         "your_yes_no": "your yes/no result",
+        "yes": "YES", 
+        "no": "NO",
     },
     "he": {
         "welcome": "ברוכים הבאים ל",
@@ -124,6 +126,8 @@ TRANSLATIONS = {
         "your_answer": "התשובה שלך",
         "your_prediction": "התחזית שלך",
         "your_yes_no": "תוצאת כן/לא שלך",
+        "yes": "כן", 
+        "no": "לא",
     },
     "uk": {
         "welcome": "ласкаво просимо до",
@@ -186,6 +190,8 @@ TRANSLATIONS = {
         "your_two_person": "ваша історія прогнозів для двох",
         "your_answer": "ваша відповідь",
         "your_prediction": "ваше передбачення",
-    "your_yes_no": "ваш результат так/ні",
+        "your_yes_no": "ваш результат так/ні",
+        "yes": "ТАК", 
+        "no": "НІ",
     },
 }

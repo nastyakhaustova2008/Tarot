@@ -256,19 +256,21 @@ def ask_question():
         return redirect("/")
 
     question = request.form.get("question", "").strip()
-    lang = session.get("lang", "en")
+    lang = session.get("lang", "en")  # Get current language from session
+    
     me = User(session["user_name"], session["gender"])
     me.get_present()
     card = me.present[-1]
 
-    ai_answer = generate_question_answer(question, card.card_name, card.meaning, card.orientation, lang)
+    # Pass lang parameter
+    ai_answer = generate_question_answer(question, card.card_name, card.meaning, card.orientation, lang=lang)
 
     Tarot_database.save_reading_full(
-        user_name=session["user_name"],
-        category="question",
-        card_name=card.card_name,
-        meaning=card.meaning,
-        orientation=card.orientation,
+        session["user_name"],
+        "question",
+        card.card_name,
+        card.meaning,
+        card.orientation,
         question=question,
         ai_response=ai_answer
     )
@@ -294,16 +296,17 @@ def prediction_two():
 
     name1 = request.form.get("name1", "").strip()
     name2 = request.form.get("name2", "").strip()
-    lang = session.get("lang", "en")
+    lang = session.get("lang", "en")  # Get current language
 
     me = User(session["user_name"], session["gender"])
     me.get_oracle()
     card1, card2 = me.past[-1], me.present[-1]
 
+    # Pass lang parameter
     ai_story = generate_two_person_prediction(
         name1, card1.card_name, card1.meaning, card1.orientation,
         name2, card2.card_name, card2.meaning, card2.orientation,
-        lang
+        lang=lang
     )
 
     gid = Tarot_database.new_group_id()

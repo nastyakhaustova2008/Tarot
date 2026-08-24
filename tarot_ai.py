@@ -50,13 +50,14 @@ def generate_question_answer(question, card_name, meaning, orientation, lang="en
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={GEMINI_API_KEY}"
 
     language_names = {"en": "English", "he": "Hebrew", "uk": "Ukrainian"}
-    language_name = language_names.get(lang, "English")
+    target_language = language_names.get(lang, "English")
 
     prompt_text = (
-        f"You are a mystical tarot oracle. Respond in {language_name}.\n"
+        f"IMPORTANT: You MUST write your entire response in {target_language}.\n"
+        f"You are a mystical tarot reading oracle.\n"
         f"User asked: '{question}'\n"
-        f"Drawn Card: {card_name} ({orientation}) - Meaning: {meaning}\n"
-        f"Provide a concise, insightful 3-4 sentence direct answer to their question using this card."
+        f"Drawn card: {card_name} ({orientation}) - Meaning: {meaning}\n"
+        f"Provide a 3-4 sentence response in {target_language} directly answering their question."
     )
 
     payload = {

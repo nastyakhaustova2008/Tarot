@@ -12,7 +12,7 @@ def t(key):
     return TRANSLATIONS.get(lang, TRANSLATIONS["en"]).get(key, key)
 
 
-LANG_CODE_MAP = {"en": "en", "he": "he", "uk": "uk"}
+LANG_CODE_MAP = {"en": "english", "he": "hebrew", "uk": "ukrainian"}
 
 _translation_cache = {}
 
