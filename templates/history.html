@@ -216,9 +216,9 @@
     </div>
 
     {% if gender == "man" %}
-        <h1>{{ t('sir') }}, {{ session['user_name'] }}, {{ t('your') }} {{ t(category) }}</h1>
+        <h1>{{ t('sir') }} {{ session['user_name'] }}, {{ t('your_' + category) }}</h1>
     {% else %}
-        <h1>{{ t('lady') }}, {{ session['user_name'] }}, {{ t('your') }} {{ t(category) }}</h1>
+        <h1>{{ t('lady') }} {{ session['user_name'] }}, {{ t('your_' + category) }}</h1>
     {% endif %}
 
     {% if category == "oracle" %}

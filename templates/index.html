@@ -538,9 +538,9 @@
 
     {% if card or oracle %}
         {% if session['gender'] == "man" %}
-            <p class="greeting">&gt; {{ t('sir') }}, {{ session['user_name'] }}, {{ t('your') }} {{ t(category) if card else t('oracle') }}</p>
+            <p class="greeting">&gt; {{ t('sir') }} {{ session['user_name'] }}, {{ t('your_' + category) if card else t('your_oracle') }}</p>
         {% else %}
-            <p class="greeting">&gt; {{ t('lady') }}, {{ session['user_name'] }}, {{ t('your') }} {{ t(category) if card else t('oracle') }}</p>
+            <p class="greeting">&gt; {{ t('lady') }} {{ session['user_name'] }}, {{ t('your_' + category) if card else t('your_oracle') }}</p>
         {% endif %}
     {% endif %}
 

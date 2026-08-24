@@ -37,6 +37,10 @@ TRANSLATIONS = {
         "remove_image": "Remove image",
         "save": "Save",
         "cancel": "Cancel",
+        "your_past": "your Past",
+        "your_present": "your Present",
+        "your_future": "your Future",
+        "your_oracle": "your Oracle",
     },
     "he": {
         "welcome": "ברוכים הבאים ל",
@@ -76,6 +80,10 @@ TRANSLATIONS = {
         "remove_image": "הסר תמונה",
         "save": "שמור",
         "cancel": "ביטול",
+        "your_past": "העבר שלך",
+        "your_present": "ההווה שלך",
+        "your_future": "העתיד שלך",
+        "your_oracle": "האורקל שלך",
     },
     "uk": {
         "welcome": "ласкаво просимо до",
@@ -115,5 +123,9 @@ TRANSLATIONS = {
         "remove_image": "Видалити зображення",
         "save": "Зберегти",
         "cancel": "Скасувати",
+        "your_past": "Ваше Минуле",
+        "your_present": "Ваше Теперішнє",
+        "your_future": "Ваше Майбутнє",
+        "your_oracle": "Ваш Оракул",
     },
 }

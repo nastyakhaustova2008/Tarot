@@ -4,7 +4,7 @@ import Tarot_database
 from flask import Flask, render_template, session, redirect, request
 import os
 from translations import TRANSLATIONS
-from deep_translator import GoogleTranslator
+from deep_translator import MyMemoryTranslator
 from dotenv import load_dotenv
 from tarot_ai import generate_oracle_story
 from markupsafe import Markup, escape
@@ -353,7 +353,7 @@ def t(key):
 
 app.jinja_env.globals["t"] = t
 
-LANG_CODE_MAP = {"en": "en", "he": "iw", "uk": "uk"}  # "iw" is Google Translate's legacy code for Hebrew
+LANG_CODE_MAP = {"en": "en-US", "he": "he-IL", "uk": "uk-UA"}
 
 _translation_cache = {}
 
@@ -365,17 +365,18 @@ def translate_meaning(text, lang):
         return _translation_cache[cache_key]
     try:
         target = LANG_CODE_MAP.get(lang, lang)
-        translated = GoogleTranslator(source="en", target=target).translate(text)
+        translated = MyMemoryTranslator(source="en-US", target=target).translate(text)
 
         if not translated or "Error 500" in translated or "Server Error" in translated or len(translated) > len(text) * 4:
-            print("TRANSLATE REJECTED RESULT:", translated)
+            print("TRANSLATE REJECTED RESULT:", translated, flush=True)
             return text
 
         _translation_cache[cache_key] = translated
         return translated
     except Exception as error:
-        print("TRANSLATE FAILED:", repr(error))
+        print("TRANSLATE FAILED:", repr(error), flush=True)
         return text
+    
 
 def tr(text):
     return translate_meaning(text, session.get("lang", "en"))
