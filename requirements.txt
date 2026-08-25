@@ -2,3 +2,5 @@ flask
 requests
 deep-translator
 python-dotenv
+psycopg2-binary 
+sqlalchemy 

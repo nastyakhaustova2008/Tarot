@@ -1,0 +1,497 @@
+{% extends "base.html" %}
+{% from "partials/mushroom_nav.html" import mushroom_nav %}
+
+{% block content %}
+<style>
+    .calendar-wrapper {
+        position: relative;
+        overflow: hidden;
+        padding-bottom: 60px;
+    }
+
+    /* Hero Header */
+    .calendar-hero {
+        position: relative;
+        text-align: center;
+        margin-bottom: 10px;
+        padding: 30px 0 10px 0;
+    }
+
+    .calendar-hero h1 {
+        color: #50ffc0;
+        font-size: 2.6em;
+        letter-spacing: 2px;
+        text-shadow: 0 0 14px rgba(57, 255, 176, 0.6), 0 0 28px rgba(57, 255, 176, 0.3);
+        margin-bottom: 6px;
+    }
+
+    .calendar-hero p {
+        color: #9fd8c4;
+        font-size: 0.95em;
+    }
+
+    /* Mossy Rocks & Fog Elements */
+    .hero-decor-svg {
+        width: 100%;
+        max-width: 800px;
+        height: auto;
+        margin: 0 auto;
+        display: block;
+        pointer-events: none;
+    }
+
+    .lake-ripple {
+        position: absolute;
+        border: 1px solid rgba(57, 255, 176, 0.25);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .lake-ripple.r1 { width: 140px; height: 40px; top: -10px; left: 8%; }
+    .lake-ripple.r2 { width: 220px; height: 60px; top: 10px; right: 5%; border-color: rgba(57, 255, 176, 0.15); }
+
+    .lake-divider { display: block; width: 100%; height: 22px; margin: 18px 0; opacity: 0.6; }
+
+    .calendar-month { margin-top: 34px; }
+    .calendar-day { margin: 18px 0 30px 0; }
+
+    .calendar-day-header {
+        color: #39ffb0;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 1.05em;
+        margin: 0 0 16px 0;
+        padding-bottom: 8px;
+        border-bottom: 1px dashed rgba(57, 255, 176, 0.25);
+    }
+
+    /* 3 Columns Grid Layout */
+    .prediction-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    .prediction-square {
+        border: 1px solid rgba(57, 255, 176, 0.35);
+        background: rgba(0, 20, 15, 0.45);
+        backdrop-filter: blur(4px);
+        border-radius: 6px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .prediction-square:hover {
+        transform: translateY(-3px);
+        border-color: rgba(57, 255, 176, 0.65);
+        box-shadow: 0 4px 18px rgba(57, 255, 176, 0.18);
+    }
+
+    /* Distinct Amber Color for Category Header */
+    .prediction-square-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8em;
+        font-family: 'Share Tech Mono', monospace;
+        letter-spacing: 0.8px;
+        margin-bottom: 12px;
+    }
+
+    .prediction-type-title {
+        color: #f4c07a;
+        font-weight: bold;
+        text-transform: uppercase;
+        text-shadow: 0 0 6px rgba(244, 192, 122, 0.25);
+    }
+
+    .prediction-time { color: #4a9e85; }
+
+    .prediction-cards-row {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    .prediction-card-mini { 
+        text-align: center; 
+        width: 64px; 
+        cursor: pointer; 
+    }
+
+    .prediction-card-mini img {
+        width: 56px;
+        height: auto;
+        border-radius: 3px;
+        border: 1px solid rgba(57, 255, 176, 0.4);
+        box-shadow: 0 0 8px rgba(57, 255, 176, 0.15);
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .prediction-card-mini:hover img {
+        transform: scale(1.08);
+        border-color: #39ffb0;
+        box-shadow: 0 0 12px rgba(57, 255, 176, 0.4);
+    }
+
+    .prediction-card-mini .mini-label {
+        font-size: 0.65em;
+        color: #9fd8c4;
+        margin-top: 3px;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .prediction-card-mini .mini-name {
+        font-size: 0.68em;
+        color: #b6ffe0;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .prediction-question {
+        color: #9fd8c4;
+        font-style: italic;
+        font-size: 0.88em;
+        margin: 4px 0 8px 0;
+    }
+
+    .prediction-answer {
+        color: #d6fff0;
+        font-size: 0.88em;
+        line-height: 1.45;
+        margin: 4px 0 16px 0;
+        flex-grow: 1;
+    }
+
+    .prediction-yesno-answer {
+        text-align: center;
+        font-size: 1.6em;
+        color: #39ffb0;
+        margin: 8px 0 16px 0;
+        text-shadow: 0 0 10px rgba(57, 255, 176, 0.4);
+    }
+
+    /* View/Edit Note Perimeter Button */
+    .prediction-link {
+        align-self: flex-start;
+        margin-top: auto;
+        font-size: 0.8em;
+        font-family: 'Share Tech Mono', monospace;
+        color: #39ffb0;
+        background: rgba(0, 30, 22, 0.6);
+        border: 1px solid rgba(57, 255, 176, 0.4);
+        border-radius: 4px;
+        padding: 6px 12px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .prediction-link:hover {
+        color: #0a1412;
+        background: #39ffb0;
+        border-color: #39ffb0;
+        box-shadow: 0 0 10px rgba(57, 255, 176, 0.4);
+    }
+
+    /* Card Zoom Modal */
+    .card-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(4, 12, 10, 0.85);
+        backdrop-filter: blur(8px);
+        justify-content: center;
+        align-items: center;
+    }
+
+    .card-modal.active { display: flex; }
+
+    .card-modal-content {
+        background: rgba(0, 25, 20, 0.95);
+        border: 1px solid #39ffb0;
+        box-shadow: 0 0 25px rgba(57, 255, 176, 0.3);
+        border-radius: 8px;
+        padding: 24px;
+        text-align: center;
+        max-width: 320px;
+        position: relative;
+    }
+
+    .card-modal-content img {
+        width: 180px;
+        height: auto;
+        border-radius: 6px;
+        border: 1px solid rgba(57, 255, 176, 0.5);
+        margin-bottom: 14px;
+    }
+
+    .card-modal-title {
+        color: #b6ffe0;
+        font-size: 1.1em;
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
+
+    .card-modal-sub {
+        color: #7fffd4;
+        font-size: 0.85em;
+    }
+
+    .card-modal-close {
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        color: #39ffb0;
+        font-size: 1.4em;
+        cursor: pointer;
+    }
+
+    /* Note Selection Modal */
+    .note-selection-modal {
+        display: none;
+        position: fixed;
+        z-index: 1001;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(4, 12, 10, 0.85);
+        backdrop-filter: blur(8px);
+        justify-content: center;
+        align-items: center;
+    }
+
+    .note-selection-modal.active { display: flex; }
+
+    .note-modal-box {
+        background: rgba(0, 25, 20, 0.95);
+        border: 1px solid #39ffb0;
+        box-shadow: 0 0 25px rgba(57, 255, 176, 0.3);
+        border-radius: 8px;
+        padding: 20px 24px;
+        text-align: center;
+        min-width: 260px;
+        position: relative;
+    }
+
+    .note-modal-box h4 {
+        color: #f4c07a;
+        font-family: 'Share Tech Mono', monospace;
+        margin-top: 0;
+        margin-bottom: 16px;
+        font-size: 1.05em;
+    }
+
+    .note-modal-options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .note-option-btn {
+        color: #39ffb0;
+        font-family: 'Share Tech Mono', monospace;
+        background: rgba(0, 35, 25, 0.8);
+        border: 1px solid rgba(57, 255, 176, 0.5);
+        border-radius: 4px;
+        padding: 8px 14px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .note-option-btn:hover {
+        background: #39ffb0;
+        color: #0a1412;
+        box-shadow: 0 0 12px rgba(57, 255, 176, 0.5);
+    }
+
+    @media (max-width: 900px) {
+        .prediction-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 600px) {
+        .prediction-grid { grid-template-columns: 1fr; }
+        .lake-ripple.r2 { display: none; }
+    }
+</style>
+
+<div class="calendar-wrapper">
+    <div class="calendar-hero">
+        <div class="lake-ripple r1"></div>
+        <div class="lake-ripple r2"></div>
+        <h1>{{ t('calendar') }}</h1>
+        <p>&gt; <bdi>{{ session['user_name'] }}</bdi>, {{ t('calendar_intro') }}</p>
+
+        <!-- Mystical Rocks & Fog SVG Artwork -->
+        <svg class="hero-decor-svg" viewBox="0 0 500 60" preserveAspectRatio="none">
+            <path d="M 0,30 Q 120,5 250,30 T 500,30" fill="none" stroke="rgba(57,255,176,0.15)" stroke-width="8" filter="blur(4px)"/>
+            <path d="M 0,40 Q 150,55 300,35 T 500,45" fill="none" stroke="rgba(127,255,212,0.1)" stroke-width="12" filter="blur(6px)"/>
+            <path d="M 30,60 Q 40,40 60,42 Q 80,44 95,60 Z" fill="#0a1d17" stroke="#39ffb0" stroke-width="0.5" opacity="0.7"/>
+            <path d="M 42,44 Q 52,38 65,42" fill="none" stroke="#39ffb0" stroke-width="1.5" opacity="0.6"/>
+            <path d="M 400,60 Q 420,32 445,36 Q 470,40 485,60 Z" fill="#0a1d17" stroke="#39ffb0" stroke-width="0.5" opacity="0.7"/>
+            <path d="M 418,37 Q 435,30 452,37" fill="none" stroke="#39ffb0" stroke-width="1.5" opacity="0.6"/>
+        </svg>
+    </div>
+
+    <svg class="lake-divider" viewBox="0 0 600 22" preserveAspectRatio="none">
+        <path d="M0,11 C50,2 100,20 150,11 C200,2 250,20 300,11 C350,2 400,20 450,11 C500,2 550,20 600,11"
+              fill="none" stroke="#39ffb0" stroke-width="1.5" opacity="0.5"/>
+    </svg>
+
+    {% if not calendar_data %}
+        <p class="disclaimer">{{ t('calendar_empty') }}</p>
+    {% endif %}
+
+    {% for month_label, days in calendar_data.items() %}
+        <div class="calendar-month">
+            <h2 class="section-label">// {{ month_label }}</h2>
+
+            {% for day_num, predictions in days.items() %}
+                <div class="calendar-day">
+                    <h3 class="calendar-day-header">{{ day_num }} {{ month_label }}</h3>
+
+                    <div class="prediction-grid">
+                        {% for pred in predictions %}
+                            <div class="prediction-square">
+                                <div class="prediction-square-header">
+                                    <span class="prediction-type-title">
+                                        {% if pred.type == 'single' %}{{ t(pred.category) }}
+                                        {% elif pred.type == 'oracle' %}{{ t('oracle') }}
+                                        {% elif pred.type == 'two_person' %}{{ t('prediction_for_two') }}
+                                        {% elif pred.type == 'question' %}{{ t('ask_question') }}
+                                        {% elif pred.type == 'yes_no' %}{{ t('ask_yes_no') }}
+                                        {% endif %}
+                                    </span>
+                                    <span class="prediction-time">{{ pred.created_at.strftime('%H:%M') if pred.created_at else '' }}</span>
+                                </div>
+
+                                {% if pred.type in ('single', 'question', 'oracle', 'two_person') %}
+                                    <div class="prediction-cards-row">
+                                        {% for card in pred.cards %}
+                                            <div class="prediction-card-mini" 
+                                                 onclick="openCardModal('/static/{{ card.image_filename }}', '{{ card.card_name }}', '{{ card.target_name or card.label or '' }}')">
+                                                {% if card.image_filename %}
+                                                    <img src="/static/{{ card.image_filename }}" alt="{{ card.card_name }}">
+                                                {% endif %}
+                                                <span class="mini-name">{{ card.card_name }}</span>
+                                                {% if card.target_name %}
+                                                    <span class="mini-label">{{ card.target_name }}</span>
+                                                {% elif card.label %}
+                                                    <span class="mini-label">{{ t(card.label) }}</span>
+                                                {% endif %}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                {% if pred.type == 'single' %}
+                                    <p class="prediction-answer">{{ pred.cards[0].meaning }}</p>
+                                {% elif pred.type == 'question' %}
+                                    <p class="prediction-question">&gt; "{{ pred.question }}"</p>
+                                    <p class="prediction-answer">{{ pred.ai_response }}</p>
+                                {% elif pred.type == 'yes_no' %}
+                                    <p class="prediction-question">&gt; "{{ pred.question }}"</p>
+                                    <p class="prediction-yesno-answer">{{ t(pred.ai_response.lower()) if pred.ai_response else '' }}</p>
+                                {% elif pred.type in ('oracle', 'two_person') %}
+                                    <p class="prediction-answer">{{ pred.ai_response }}</p>
+                                {% endif %}
+
+                                <!-- View / Edit Note Button Logic -->
+                                {% if pred.type == 'oracle' %}
+                                    <button type="button" class="prediction-link" onclick="openNoteModal('oracle-modal-{{ pred.id }}')">
+                                        {{ t('view_note') or 'View / edit note' }}
+                                    </button>
+
+                                    <div id="oracle-modal-{{ pred.id }}" class="note-selection-modal" onclick="closeNoteModal('oracle-modal-{{ pred.id }}')">
+                                        <div class="note-modal-box" onclick="event.stopPropagation()">
+                                            <span class="card-modal-close" onclick="closeNoteModal('oracle-modal-{{ pred.id }}')">&times;</span>
+                                            <h4>{{ t('choose_card_for_note') or 'Choose card for note' }}</h4>
+                                            <div class="note-modal-options">
+                                                {% for card in pred.cards %}
+                                                    <a href="/note/{{ card.id or pred.id }}?next=/calendar" class="note-option-btn">
+                                                        {{ t(card.label) if card.label else card.card_name }}
+                                                    </a>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                {% elif pred.type == 'two_person' %}
+                                    <button type="button" class="prediction-link" onclick="openNoteModal('twoperson-modal-{{ pred.id }}')">
+                                        {{ t('view_note') or 'View / edit note' }}
+                                    </button>
+
+                                    <div id="twoperson-modal-{{ pred.id }}" class="note-selection-modal" onclick="closeNoteModal('twoperson-modal-{{ pred.id }}')">
+                                        <div class="note-modal-box" onclick="event.stopPropagation()">
+                                            <span class="card-modal-close" onclick="closeNoteModal('twoperson-modal-{{ pred.id }}')">&times;</span>
+                                            <h4>{{ t('choose_person_for_note') or 'Choose person for note' }}</h4>
+                                            <div class="note-modal-options">
+                                                {% for card in pred.cards %}
+                                                    <a href="/note/{{ card.id or pred.id }}?next=/calendar" class="note-option-btn">
+                                                        {{ card.target_name or card.card_name }}
+                                                    </a>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                {% else %}
+                                    <a class="prediction-link" href="/note/{{ pred.id }}?next=/calendar">
+                                        {{ t('view_note') or 'View / edit note' }}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Card Zoom Modal -->
+<div id="cardModal" class="card-modal" onclick="closeCardModal()">
+    <div class="card-modal-content" onclick="event.stopPropagation()">
+        <span class="card-modal-close" onclick="closeCardModal()">&times;</span>
+        <img id="modalCardImg" src="" alt="Enlarged Card">
+        <div id="modalCardTitle" class="card-modal-title"></div>
+        <div id="modalCardSub" class="card-modal-sub"></div>
+    </div>
+</div>
+
+<script>
+    function openCardModal(imgSrc, name, sub) {
+        document.getElementById('modalCardImg').src = imgSrc;
+        document.getElementById('modalCardTitle').textContent = name;
+        document.getElementById('modalCardSub').textContent = sub;
+        document.getElementById('cardModal').classList.add('active');
+    }
+
+    function closeCardModal() {
+        document.getElementById('cardModal').classList.remove('active');
+    }
+
+    function openNoteModal(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('active');
+    }
+
+    function closeNoteModal(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+    }
+</script>
+
+{{ mushroom_nav('back') }}
+{% endblock %}

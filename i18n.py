@@ -1,47 +1,66 @@
 import os
+import time
 from flask import session
+from deep_translator import GoogleTranslator
 import database as Tarot_database
 from translations import TRANSLATIONS
-from deep_translator import GoogleTranslator
 
-TRANSLATOR_EMAIL = os.getenv("TRANSLATOR_EMAIL")
+# Correct ISO 639-1 language codes for Google Translator
+LANG_CODE_MAP = {
+    "en": "en",
+    "he": "he",
+    "uk": "uk"
+}
 
+_memory_cache = {}
 
 def t(key):
     lang = session.get("lang", "en")
-    return TRANSLATIONS.get(lang, TRANSLATIONS["en"]).get(key, key)
+    return TRANSLATIONS.get(lang, TRANSLATIONS.get("en", {})).get(key, key)
 
+def translate_meaning(text, lang=None):
+    if not text or not isinstance(text, str):
+        return "" if text is None else str(text)
 
-LANG_CODE_MAP = {"en": "english", "he": "hebrew", "uk": "ukrainian"}
+    if lang is None:
+        lang = session.get("lang", "en")
 
-_translation_cache = {}
-
-
-import time
-
-def translate_meaning(text, lang):
     if lang == "en":
         return text
 
-    cached = Tarot_database.get_cached_translation(text, lang)
-    if cached:
-        return cached
+    target_lang = LANG_CODE_MAP.get(lang, lang)
 
+    # Check cache first
     try:
-        target = LANG_CODE_MAP.get(lang, lang)
-        translated = GoogleTranslator(source="auto", target=target).translate(text)
-        time.sleep(0.5)  # small pause to avoid tripping rate limits
+        cached = Tarot_database.get_cached_translation(text, target_lang)
+        if cached:
+            return cached
+    except Exception as db_err:
+        print(f"CACHE READ FAILED: {repr(db_err)}", flush=True)
 
-        if not translated or "Error 500" in translated or "Server Error" in translated or len(translated) > len(text) * 4:
-            print("TRANSLATE REJECTED RESULT:", translated, flush=True)
+    # Request live translation
+    try:
+        translated = GoogleTranslator(source="auto", target=target_lang).translate(text)
+
+        if not translated or "Error 500" in translated or "Server Error" in translated:
             return text
 
-        Tarot_database.save_cached_translation(text, lang, translated)
-        return translated
-    except Exception as error:
-        print("TRANSLATE FAILED:", repr(error), flush=True)
-        return text 
+        # Attempt to save to cache, proceed even if DB save fails
+        try:
+            Tarot_database.save_cached_translation(text, target_lang, translated)
+        except Exception:
+            pass
 
+        return translated
+
+    except Exception as error:
+        print(f"TRANSLATE FAILED: {repr(error)}", flush=True)
+        return text
 
 def tr(text):
+    # If the text is a key in dictionary, use dictionary translation first
+    translated_dict = t(text)
+    if translated_dict != text:
+        return translated_dict
+
     return translate_meaning(text, session.get("lang", "en"))

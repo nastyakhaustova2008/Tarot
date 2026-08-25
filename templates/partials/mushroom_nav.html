@@ -1,0 +1,110 @@
+{% macro mushroom_nav(mode='back') %}
+<style>
+    .mushroom-nav-wrapper {
+        position: fixed;
+        bottom: 18px;
+        right: 18px;
+        z-index: 999;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    /* Expandable Category Stack */
+    .mushroom-menu {
+        display: none;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .mushroom-menu.active {
+        display: flex;
+    }
+
+    .mushroom-menu-item {
+        color: #39ffb0;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 0.85em;
+        background: rgba(0, 20, 15, 0.95);
+        border: 1px solid #39ffb0;
+        border-radius: 4px;
+        padding: 8px 16px;
+        text-decoration: none;
+        box-shadow: 0 0 10px rgba(57, 255, 176, 0.25);
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .mushroom-menu-item:hover {
+        background: #39ffb0;
+        color: #0a1412;
+        box-shadow: 0 0 14px rgba(57, 255, 176, 0.6);
+    }
+
+    /* Highlighted buttons (Calendar & Back to Taro) */
+    .mushroom-menu-item.highlight {
+        color: #f4c07a;
+        border-color: #f4c07a;
+    }
+
+    .mushroom-menu-item.highlight:hover {
+        background: #f4c07a;
+        color: #0a1412;
+    }
+
+    /* Green Glow Mushroom Button */
+    .mushroom-trigger {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .mushroom-trigger svg {
+        display: block;
+        filter: drop-shadow(0 0 8px rgba(57, 255, 176, 0.5));
+        transition: filter 0.2s ease, transform 0.2s ease;
+    }
+
+    .mushroom-trigger:hover svg {
+        filter: drop-shadow(0 0 16px rgba(57, 255, 176, 0.85));
+        transform: translateY(-2px);
+    }
+</style>
+
+<div class="mushroom-nav-wrapper">
+    <!-- Pop-up Menu Links -->
+    <div class="mushroom-menu" id="mushroomMenu">
+        <a href="/history?category=past" class="mushroom-menu-item">{{ t('past') }}</a>
+        <a href="/history?category=present" class="mushroom-menu-item">{{ t('present') }}</a>
+        <a href="/history?category=future" class="mushroom-menu-item">{{ t('future') }}</a>
+        <a href="/history?category=oracle" class="mushroom-menu-item">{{ t('oracle') }}</a>
+        <a href="/history?category=yes_no" class="mushroom-menu-item">{{ t('yes_no') }}</a>
+        <a href="/history?category=question" class="mushroom-menu-item">{{ t('ask_question') }}</a>
+        <a href="/history?category=two_person" class="mushroom-menu-item">{{ t('prediction_for_two') }}</a>
+        
+        <!-- New Calendar Button -->
+        <a href="/calendar" class="mushroom-menu-item highlight">{{ t('calendar') or 'Calendar' }}</a>
+        
+        <!-- Back to Taro Button -->
+        <a href="/" class="mushroom-menu-item highlight">{{ t('back_to_taro') or 'Back to Taro' }}</a>
+    </div>
+
+    <!-- Mushroom Trigger -->
+    <button type="button" class="mushroom-trigger" onclick="document.getElementById('mushroomMenu').classList.toggle('active')" aria-label="Toggle Navigation">
+        <svg width="48" height="52" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 45 C5 15 75 15 75 45 C55 35 25 35 5 45 Z" fill="#39ffb0"/>
+            <path d="M12 40 C15 22 65 22 68 40 Z" fill="#7fffd4" opacity="0.4"/>
+            <circle cx="25" cy="30" r="3.5" fill="#05080a" opacity="0.4"/>
+            <circle cx="55" cy="26" r="3" fill="#05080a" opacity="0.4"/>
+            <rect x="32" y="45" width="16" height="45" rx="6" fill="#d8cba8"/>
+            <rect x="32" y="45" width="16" height="45" rx="6" fill="none" stroke="#39ffb0" stroke-width="1.5" opacity="0.6"/>
+        </svg>
+    </button>
+</div>
+{% endmacro %}

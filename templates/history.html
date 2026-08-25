@@ -1,10 +1,77 @@
 {% extends "base.html" %}
 
+{% from "partials/mushroom_nav.html" import mushroom_nav %}
+
 {% block decor %}{% include "partials/decor_history.html" %}{% endblock %}
 
 {% block title %}Taro - History{% endblock %}
 
-{% block extra_style %}{% include "partials/history_theme.html" %}{% endblock %}
+{% block extra_style %}
+{% include "partials/history_theme.html" %}
+<style>
+    /* Ensure reading container handles full-width positioning */
+    .reading {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    /* Container for buttons pushed to opposite edges */
+    .reading-buttons-row {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
+        margin-top: 18px;
+        box-sizing: border-box;
+    }
+
+    /* Shared button base dimensions */
+    .history-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 0.85em;
+        height: 34px;
+        padding: 0 16px;
+        box-sizing: border-box;
+        border-radius: 4px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    /* Left Button (Share - Gold) */
+    .history-action-btn.share-btn-style {
+        color: #e0a458;
+        background: rgba(30, 20, 0, 0.6);
+        border: 1px solid rgba(224, 164, 88, 0.4);
+    }
+
+    .history-action-btn.share-btn-style:hover {
+        color: #0a1412;
+        background: #e0a458;
+        border-color: #e0a458;
+        box-shadow: 0 0 10px rgba(224, 164, 88, 0.5);
+    }
+
+    /* Right Button (Add Note - Green) */
+    .history-action-btn.note-btn-style {
+        color: #39ffb0;
+        background: rgba(0, 30, 22, 0.6);
+        border: 1px solid rgba(57, 255, 176, 0.4);
+    }
+
+    .history-action-btn.note-btn-style:hover {
+        color: #0a1412;
+        background: #39ffb0;
+        border-color: #39ffb0;
+        box-shadow: 0 0 10px rgba(57, 255, 176, 0.4);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 
@@ -31,7 +98,7 @@
                         <div class="reading-meaning">{{ tr(row[3]) }}</div>
                         <div class="reading-footer">
                             <span class="group-badge">{{ t('oracle') }}</span>
-                            <a class="note-icon-link" href="/note/{{ row[0] }}">
+                            <a class="note-icon-link" href="/note/{{ row[0] }}?next=/history?category=oracle">
                                 {% if row[6] %}
                                     <img class="note-icon-thumb" src="{{ row[6] }}" alt="note">
                                 {% elif row[5] %}
@@ -63,21 +130,36 @@
         {% if two_person_groups %}
             {% for group in two_person_groups %}
             <div class="oracle-group">
-                <div class="oracle-group-label">// {{ t('prediction_for_two') }}: {{ group.names }}</div>
+                <div class="oracle-group-label">// {{ t('prediction_for_two') }}: {{ group.names }} — {{ group.group_id }}</div>
+                
                 {% for person_row in [group.person1, group.person2] %}
-                <h2>{{ person_row[11] }} ({{ tr(person_row[2]) }})</h2>
+                <!-- Show person name (index 10) instead of group_id (index 11) -->
+                <h2>{{ person_row[10] or person_row[2] }} ({{ tr(person_row[2]) }})</h2>
+                
                 <div class="reading">
                     <div class="reading-name">{{ tr(person_row[2]) }}</div>
                     <div class="reading-orientation">{{ t(person_row[4]) }}</div>
                     <div class="reading-meaning">{{ tr(person_row[3]) }}</div>
+                    
                     <div class="reading-footer">
-                        <span class="group-badge">{{ person_row[11] }}</span>
-                        <a class="note-icon-link" href="/note/{{ person_row[0] }}">
+                        <!-- Show person name badge (index 10) -->
+                        <span class="group-badge">{{ person_row[10] }}</span>
+                        
+                        <a class="note-icon-link" href="/note/{{ person_row[0] }}?next=/history?category=two_person">
+                            {% set note_img = person_row[6] if (person_row[6] and person_row[6].startswith('data:image')) else None %}
+                            
+                            {% if note_img %}
+                                <img class="note-icon-thumb" src="{{ note_img }}" alt="note">
+                            {% elif person_row[5] or person_row[6] %}
+                                <svg class="note-icon-generic" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#a35a5a" stroke-width="2"/></svg>
+                            {% endif %}
+                            
                             {{ t('edit_note') if (person_row[5] or person_row[6]) else t('add_note') }}
                         </a>
                     </div>
                 </div>
                 {% endfor %}
+
                 {% if group.story %}
                 <div class="oracle-story-block">
                     <span class="oracle-story-label">// {{ t('your_prediction') }}</span>
@@ -91,7 +173,6 @@
         {% else %}
             <p>{{ t('no_readings') }}</p>
         {% endif %}
-
     {% else %}
 
         {% if rows %}
@@ -106,40 +187,64 @@
                             {{ t(row[9].lower()) if row[9] else tr(row[2]) }}
                         </div>
                     </div>
+
+                    <!-- Share on Left (Amber), Add Note on Right (Green) -->
+                    <div class="reading-buttons-row">
+                        <button type="button" class="history-action-btn share-btn-style share-btn" data-share-image="shareYesNoHist-{{ row[0] }}" data-share-filename="yes-no.png">
+                            {{ t('share') }}
+                        </button>
+
+                        <a class="history-action-btn note-btn-style" href="/note/{{ row[0] }}?next=/history?category=yes_no">
+                            {% if row[6] %}
+                                <img class="note-icon-thumb" src="{{ row[6] }}" alt="note">
+                            {% elif row[5] %}
+                                <svg class="note-icon-generic" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#a35a5a" stroke-width="2"/></svg>
+                            {% endif %}
+                            {{ t('edit_note') if (row[5] or row[6]) else t('add_note') }}
+                        </a>
+                    </div>
+
                 {% elif category == "question" %}
                     <div class="reading-name">{{ t('question_asked') }} {{ row[8] }}</div>
                     <div class="reading-orientation">{{ tr(row[1]) }} ({{ t(row[3]) }})</div>
                     <div class="reading-meaning"><strong>{{ t('answer_for_question') }}</strong> {{ tr(row[9]) }}</div>
+                    <div class="reading-buttons-row">
+                        <script type="application/json" id="questionText-{{ row[0] }}">{{ (t('question_asked') ~ ' ' ~ row[8] ~ '\n' ~ t('answer_for_question') ~ ' ' ~ tr(row[9]))|tojson }}</script>
+                        <button type="button" class="history-action-btn share-btn-style share-btn" data-share-text-src="questionText-{{ row[0] }}">{{ t('share') }}</button>
+                        
+                        <a class="history-action-btn note-btn-style" href="/note/{{ row[0] }}?next=/history?category=question">
+                            {% if row[6] %}
+                                <img class="note-icon-thumb" src="{{ row[6] }}" alt="note">
+                            {% elif row[5] %}
+                                <svg class="note-icon-generic" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#a35a5a" stroke-width="2"/></svg>
+                            {% endif %}
+                            {{ t('edit_note') if (row[5] or row[6]) else t('add_note') }}
+                        </a>
+                    </div>
                 {% else %}
                     <div class="reading-name">{{ tr(row[1]) }}</div>
                     <div class="reading-orientation">{{ t(row[3]) }}</div>
                     <div class="reading-meaning">{{ tr(row[2]) }}</div>
-                {% endif %}
-                <div class="reading-footer">
-                    <span></span>
-                    <a class="note-icon-link" href="/note/{{ row[0] }}">
-                        {% if row[6] %}
-                            <img class="note-icon-thumb" src="{{ row[6] }}" alt="note">
-                        {% elif row[5] %}
-                            <svg class="note-icon-generic" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#a35a5a" stroke-width="2"/></svg>
-                        {% endif %}
-                        {{ t('edit_note') if (row[5] or row[6]) else t('add_note') }}
-                    </a>
-                </div>
-                {% if category == "yes_no" %}
-                    <button type="button" class="share-btn" data-share-image="shareYesNoHist-{{ row[0] }}" data-share-filename="yes-no.png">{{ t('share') }}</button>
-                {% elif category == "question" %}
-                    <script type="application/json" id="questionText-{{ row[0] }}">{{ (t('question_asked') ~ ' ' ~ row[8] ~ '\n' ~ t('answer_for_question') ~ ' ' ~ tr(row[9]))|tojson }}</script>
-                    <button type="button" class="share-btn" data-share-text-src="questionText-{{ row[0] }}">{{ t('share') }}</button>
+                    <div class="reading-footer">
+                        <span></span>
+                        <a class="note-icon-link" href="/note/{{ row[0] }}?next=/history?category={{ category }}">
+                            {% if row[6] %}
+                                <img class="note-icon-thumb" src="{{ row[6] }}" alt="note">
+                            {% elif row[5] %}
+                                <svg class="note-icon-generic" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z" stroke="#a35a5a" stroke-width="2"/></svg>
+                            {% endif %}
+                            {{ t('edit_note') if (row[5] or row[6]) else t('add_note') }}
+                        </a>
+                    </div>
                 {% endif %}
             </div>
             {% endfor %}
         {% else %}
             <p>{{ t('no_readings_category') }}</p>
         {% endif %}
-
+#for person_row in [group.person1, group.person2]
     {% endif %}
 
-    {% include "partials/leaf_nav.html" %}
+    {{ mushroom_nav('back') }}
 
 {% endblock %}

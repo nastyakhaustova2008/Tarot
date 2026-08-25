@@ -13,6 +13,7 @@ from exceptions import TarotAPIError
 from user_model import User
 from i18n import t, tr, TRANSLATIONS
 from tarot_ai import generate_oracle_story  # noqa: F401 (kept for parity with original imports)
+from i18n import translate_meaning
 
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -103,7 +104,7 @@ def logout():
     return redirect("/")
 
 
-@app.route("/draw/<category>")
+@app.route("/draw/<category>", methods=["POST"])
 def draw(category):
     if "user_name" not in session:
         return redirect("/")
@@ -114,6 +115,10 @@ def draw(category):
         if category == "past":
             me.get_past()
             card = me.past[-1]
+            Tarot_database.save_reading_full(
+                session["user_name"], "past", card.card_name, card.meaning, card.orientation,
+                image_filename=card.image_filename
+            )
             session["last_card"] = {
                 "card_name": card.card_name,
                 "meaning": card.meaning,
@@ -128,6 +133,10 @@ def draw(category):
         elif category == "present":
             me.get_present()
             card = me.present[-1]
+            Tarot_database.save_reading_full(
+                session["user_name"], "present", card.card_name, card.meaning, card.orientation,
+                image_filename=card.image_filename
+            )
             session["last_card"] = {
                 "card_name": card.card_name,
                 "meaning": card.meaning,
@@ -142,6 +151,10 @@ def draw(category):
         elif category == "future":
             me.get_future()
             card = me.future[-1]
+            Tarot_database.save_reading_full(
+                session["user_name"], "future", card.card_name, card.meaning, card.orientation,
+                image_filename=card.image_filename
+            )
             session["last_card"] = {
                 "card_name": card.card_name,
                 "meaning": card.meaning,
@@ -160,6 +173,15 @@ def draw(category):
                 (me.present[-1], "present"),
                 (me.future[-1], "future"),
             ]
+
+            gid = Tarot_database.new_group_id()
+            for card, label in oracle:
+                Tarot_database.save_reading_full(
+                    session["user_name"], label, card.card_name, card.meaning, card.orientation,
+                    group_id=gid, image_filename=card.image_filename
+                )
+            Tarot_database.save_oracle_story(session["user_name"], gid, me.oracle_story)
+
             session["last_oracle"] = [
                 {
                     "card_name": card.card_name,
@@ -196,6 +218,9 @@ def set_language(lang):
     return redirect("/")
 
 
+import base64
+from flask import request, redirect, render_template, session
+
 @app.route("/note/<int:reading_id>", methods=["GET", "POST"])
 def note(reading_id):
     if "user_name" not in session:
@@ -206,12 +231,20 @@ def note(reading_id):
     if not reading:
         return redirect("/")
 
+    # Read the full 'next' parameter including query arguments (e.g. /history?category=two_person)
+    next_url = request.args.get("next") or request.form.get("next") or f"/history?category={reading[1]}"
+
     if request.method == "POST":
+        # Handle Cancel action
+        if request.form.get("action") == "cancel":
+            return redirect(next_url)
+
         note_text = request.form.get("note_text", "")[:6000]
         image_position_raw = request.form.get("image_position")
         image_position = int(image_position_raw) if image_position_raw else None
 
-        note_image = reading[7]
+        # Safely extract existing note image
+        note_image = reading[7] if len(reading) > 7 else None
 
         uploaded = request.files.get("note_image")
         if uploaded and uploaded.filename:
@@ -221,22 +254,23 @@ def note(reading_id):
             note_image = None
             image_position = None
 
+        # Save note entry to database
         Tarot_database.save_note(reading_id, user_name, note_text, note_image, image_position)
-        return redirect(f"/history/{reading[1]}")
+        
+        # Redirect back to the exact origin page
+        return redirect(next_url)
 
     card_raw = reading[2] if len(reading) > 2 else None
     card_translated = tr(card_raw) if card_raw else None
 
     meta_info = {
-        "category": reading[1],
+        "category": reading[1] if len(reading) > 1 else "",
         "card_name": card_translated,
         "question": reading[9] if len(reading) > 9 else None,
         "target_name": reading[11] if len(reading) > 11 else None,
     }
 
-    return render_template("note.html", reading=reading, meta_info=meta_info)
-
-
+    return render_template("note.html", reading=reading, meta_info=meta_info, next_url=next_url)
 @app.route("/draw_yes_no", methods=["POST"])
 def draw_yes_no():
     if "user_name" not in session:
@@ -287,7 +321,9 @@ def ask_question():
         card.meaning,
         card.orientation,
         question=question,
-        ai_response=ai_answer
+        ai_response=ai_answer,
+        image_filename=card.image_filename
+
     )
 
     session["last_card"] = {
@@ -330,12 +366,12 @@ def prediction_two():
     Tarot_database.save_reading_full(
         session["user_name"], "two_person", card1.card_name, card1.meaning,
         card1.orientation, group_id=gid, question=f"{name1} & {name2}",
-        ai_response=ai_story, target_name=name1
+        ai_response=ai_story, target_name=name1, image_filename=card1.image_filename
     )
     Tarot_database.save_reading_full(
         session["user_name"], "two_person", card2.card_name, card2.meaning,
         card2.orientation, group_id=gid, question=f"{name1} & {name2}",
-        ai_response=ai_story, target_name=name2
+        ai_response=ai_story, target_name=name2, image_filename=card2.image_filename
     )
 
     session["last_oracle"] = [
@@ -372,6 +408,60 @@ def history(category):
 
     rows = Tarot_database.get_readings(user_name, category)
     return render_template("history.html", category=category, gender=gender, rows=rows)
+
+
+@app.route('/calendar')
+def calendar_view():
+    user_name = session.get('user_name')
+    current_lang = session.get('lang', 'en')
+
+    raw_calendar_data = Tarot_database.get_calendar_data(user_name)
+
+    # Safely pre-translate dynamic fields only if language is non-English
+    if current_lang != 'en' and raw_calendar_data:
+        for month_label, days in raw_calendar_data.items():
+            if not isinstance(days, dict):
+                continue
+            for day_num, predictions in days.items():
+                if not isinstance(predictions, list):
+                    continue
+                for pred in predictions:
+                    if not isinstance(pred, dict):
+                        continue
+
+                    # Safely handle strings
+                    if pred.get('ai_response') and isinstance(pred['ai_response'], str):
+                        pred['ai_response'] = translate_meaning(pred['ai_response'], current_lang)
+
+                    if pred.get('question') and isinstance(pred['question'], str):
+                        pred['question'] = translate_meaning(pred['question'], current_lang)
+
+                    # Safely handle cards list
+                    cards = pred.get('cards')
+                    if isinstance(cards, list):
+                        for card in cards:
+                            if isinstance(card, dict) and card.get('meaning') and isinstance(card['meaning'], str):
+                                card['meaning'] = translate_meaning(card['meaning'], current_lang)
+
+    return render_template('calendar.html', calendar_data=raw_calendar_data)
+
+from flask import request, render_template, session
+
+@app.route('/history')
+def history_view():
+    category = request.args.get('category', 'past')
+    user_name = session.get('user_name')
+    
+    # Query database according to selected category
+    if category == 'oracle':
+        groups = Tarot_database.get_oracle_groups(user_name)
+        return render_template('history.html', category=category, groups=groups)
+    elif category == 'two_person':
+        two_person_groups = Tarot_database.get_two_person_groups(user_name)
+        return render_template('history.html', category=category, two_person_groups=two_person_groups)
+    else:
+        rows = Tarot_database.get_readings(user_name, category)
+        return render_template('history.html', category=category, rows=rows)
 
 
 if __name__ == "__main__":
