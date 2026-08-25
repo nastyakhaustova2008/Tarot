@@ -9,12 +9,10 @@
 {% block content %}
     <h1>{{ t('note_label') }}</h1>
 
-    <!-- Context Metadata Banner -->
-
     <!-- Context Metadata Banner with Translation Keys -->
     <div class="note-context-meta">
         {% if meta_info.target_name %}
-            <span class="meta-item"><strong>{{ t('card_label') }}:</strong> {{ meta_info.card_name }}</span>
+            <span class="meta-item"><strong>{{ t('person_label') }}:</strong> {{ meta_info.target_name }}</span>
         {% endif %}
         {% if meta_info.question %}
             <span class="meta-item"><strong>{{ t('question_label') }}:</strong> {{ meta_info.question }}</span>
@@ -128,10 +126,12 @@
     .taro-mushroom .stem { fill: #e7d9b8; }
     .taro-mushroom .spot { fill: #f2e6c9; }
 
+    /* Preview Wrap with Relative Positioning for Delete Badge */
     #file-preview-wrap {
+        position: relative;
         display: inline-flex;
         align-items: center;
-        margin-top: 14px; /* Offsets the mushroom height above the log */
+        margin-top: 14px;
     }
 
     /* Thumbnail Preview Styling */
@@ -143,6 +143,40 @@
         object-fit: cover;
         box-shadow: 0 0 8px rgba(46, 230, 166, 0.3);
         vertical-align: middle;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .image-preview-thumb:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 12px rgba(46, 230, 166, 0.6);
+    }
+
+    /* Red 'X' Delete Badge */
+    .delete-img-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 20px;
+        height: 20px;
+        background: #3d220a;
+        color: #ffffff;
+        border: 1px solid #05080a;
+        border-radius: 50%;
+        font-size: 13px;
+        font-weight: bold;
+        line-height: 18px;
+        text-align: center;
+        cursor: pointer;
+        user-select: none;
+        box-shadow: 0 0 6px rgba(255, 71, 87, 0.6);
+        transition: background 0.2s ease, transform 0.2s ease;
+        z-index: 10;
+    }
+
+    .delete-img-btn:hover {
+        background: #593312;
+        transform: scale(1.15);
     }
 
     .button-group {
@@ -181,12 +215,39 @@
         background: rgba(46, 230, 166, 0.1);
         box-shadow: 0 0 8px rgba(46, 230, 166, 0.4);
     }
+
+    /* Lightbox Modal Overlay */
+    .lightbox-modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(5, 10, 8, 0.88);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .lightbox-modal img {
+        max-width: 90vw;
+        max-height: 85vh;
+        border: 2px solid #2ee6a6;
+        border-radius: 6px;
+        box-shadow: 0 0 25px rgba(46, 230, 166, 0.4);
+        cursor: default;
+    }
     </style>
 
     <form method="POST" enctype="multipart/form-data" id="note-form">
         <textarea name="note_text" id="note_text" maxlength="6000" placeholder="...">{{ reading[6] or '' }}</textarea>
         <div id="char-count">0 / 6000</div>
 
+        <!-- Hidden inputs for image state management -->
+        <input type="hidden" name="remove_image" id="remove_image_input" value="0">
         {% if reading[7] %}
         <div class="current-image" id="existing-img-container" style="display: none;">
             <input type="hidden" name="keep_existing_image" value="1">
@@ -231,13 +292,23 @@
                     onchange="handleImagePreview(this)"
                 >
 
-                <!-- Thumbnail Container -->
+                <!-- Thumbnail Container with Delete Badge -->
                 <div id="file-preview-wrap">
-                    {% if reading[7] %}
-                        <img src="{{ reading[7] }}" class="image-preview-thumb" id="img-preview" alt="preview">
-                    {% else %}
-                        <img id="img-preview" class="image-preview-thumb" style="display: none;" alt="preview">
-                    {% endif %}
+                    <img 
+                        src="{{ reading[7] or '' }}" 
+                        class="image-preview-thumb" 
+                        id="img-preview" 
+                        style="display: {{ 'inline-block' if reading[7] else 'none' }};" 
+                        alt="preview"
+                        onclick="openLightbox()"
+                    >
+                    <div 
+                        class="delete-img-btn" 
+                        id="delete-img-btn" 
+                        style="display: {{ 'block' if reading[7] else 'none' }};"
+                        onclick="deleteImage()" 
+                        title="Remove image"
+                    >×</div>
                 </div>
             </div>
 
@@ -248,10 +319,20 @@
         </div>
     </form>
 
+    <!-- Lightbox Modal for Enlarged View -->
+    <div class="lightbox-modal" id="lightbox-modal" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" alt="Enlarged preview">
+    </div>
+
     <script>
         const textarea = document.getElementById('note_text');
         const charCount = document.getElementById('char-count');
         const preview = document.getElementById('img-preview');
+        const deleteBtn = document.getElementById('delete-img-btn');
+        const fileInput = document.getElementById('taro-file-input');
+        const removeImageInput = document.getElementById('remove_image_input');
+        const lightboxModal = document.getElementById('lightbox-modal');
+        const lightboxImg = document.getElementById('lightbox-img');
         const readingId = "{{ reading[0] }}";
 
         function updateCount() {
@@ -276,6 +357,7 @@
             if (savedImg && !preview.src) {
                 preview.src = savedImg;
                 preview.style.display = 'inline-block';
+                deleteBtn.style.display = 'block';
             }
         });
 
@@ -286,10 +368,34 @@
                 reader.onload = function(e) {
                     preview.src = e.target.result;
                     preview.style.display = 'inline-block';
+                    deleteBtn.style.display = 'block';
+                    removeImageInput.value = '0';
                     sessionStorage.setItem('draft_img_' + readingId, e.target.result);
                 };
                 reader.readAsDataURL(input.files[0]);
             }
+        }
+
+        // Delete image handler
+        function deleteImage() {
+            fileInput.value = '';
+            preview.src = '';
+            preview.style.display = 'none';
+            deleteBtn.style.display = 'none';
+            removeImageInput.value = '1';
+            sessionStorage.removeItem('draft_img_' + readingId);
+        }
+
+        // Lightbox enlarged view functions   background
+        function openLightbox() {
+            if (preview.src && preview.style.display !== 'none') {
+                lightboxImg.src = preview.src;
+                lightboxModal.style.display = 'flex';
+            }
+        }
+
+        function closeLightbox() {
+            lightboxModal.style.display = 'none';
         }
 
         // Clear draft memory when form is submitted
