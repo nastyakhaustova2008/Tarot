@@ -75,6 +75,7 @@ TRANSLATIONS = {
         'cat_two_person': 'two person',
         'cat_yes_no': 'yes/no',
         'cat_question': 'question',
+        'share': 'Share',
     },
     "he": {
         "welcome": "ברוכים הבאים ל",
@@ -152,6 +153,7 @@ TRANSLATIONS = {
         'cat_two_person': 'זוגי',
         'cat_yes_no': 'כן/לא',
         'cat_question': 'שאלה',
+        'share': 'שתף',
     },
     "uk": {
         "welcome": "ласкаво просимо до",
@@ -229,5 +231,6 @@ TRANSLATIONS = {
         'cat_two_person': 'пара',
         'cat_yes_no': 'так/ні',
         'cat_question': 'питання',
+        'share': 'Поділитися',
     },
 }

@@ -49,6 +49,8 @@
                     <span class="oracle-story-label">// {{ t('oracle_whispers') }}</span>
                     {{ tr(group.story) }}
                 </div>
+                <script type="application/json" id="oracleText-{{ group.group_id }}">{{ tr(group.story)|tojson }}</script>
+                <button type="button" class="share-btn" data-share-text-src="oracleText-{{ group.group_id }}">{{ t('share') }}</button>
                 {% endif %}
             </div>
             {% endfor %}
@@ -81,6 +83,8 @@
                     <span class="oracle-story-label">// {{ t('your_prediction') }}</span>
                     {{ tr(group.story) }}
                 </div>
+                <script type="application/json" id="twoPersonText-{{ group.group_id }}">{{ tr(group.story)|tojson }}</script>
+                <button type="button" class="share-btn" data-share-text-src="twoPersonText-{{ group.group_id }}">{{ t('share') }}</button>
                 {% endif %}
             </div>
             {% endfor %}
@@ -94,11 +98,13 @@
             {% for row in rows %}
             <div class="reading">
                 {% if category == "yes_no" %}
-                    <div class="reading-name" style="color: #ff4d4d; font-size: 1.1em;">
-                        {{ row[8] if row[8] else t('yes_no_history') }}
-                    </div>
-                    <div class="reading-meaning" style="font-size: 1.3em; font-weight: bold; color: #e0a458; margin-top: 8px;">
-                        {{ t(row[9].lower()) if row[9] else tr(row[2]) }}
+                    <div id="shareYesNoHist-{{ row[0] }}" style="max-width: 400px; margin: 0 auto; text-align: center; border: 1px solid #39ffb0; border-radius: 4px; padding: 20px; background: rgba(0,255,170,0.03);">
+                        <div class="reading-name" style="color: #ff4d4d; font-size: 1.1em;">
+                            {{ row[8] if row[8] else t('yes_no_history') }}
+                        </div>
+                        <div class="reading-meaning" style="font-size: 1.3em; font-weight: bold; color: #e0a458; margin-top: 8px;">
+                            {{ t(row[9].lower()) if row[9] else tr(row[2]) }}
+                        </div>
                     </div>
                 {% elif category == "question" %}
                     <div class="reading-name">{{ t('question_asked') }} {{ row[8] }}</div>
@@ -120,6 +126,12 @@
                         {{ t('edit_note') if (row[5] or row[6]) else t('add_note') }}
                     </a>
                 </div>
+                {% if category == "yes_no" %}
+                    <button type="button" class="share-btn" data-share-image="shareYesNoHist-{{ row[0] }}" data-share-filename="yes-no.png">{{ t('share') }}</button>
+                {% elif category == "question" %}
+                    <script type="application/json" id="questionText-{{ row[0] }}">{{ (t('question_asked') ~ ' ' ~ row[8] ~ '\n' ~ t('answer_for_question') ~ ' ' ~ tr(row[9]))|tojson }}</script>
+                    <button type="button" class="share-btn" data-share-text-src="questionText-{{ row[0] }}">{{ t('share') }}</button>
+                {% endif %}
             </div>
             {% endfor %}
         {% else %}

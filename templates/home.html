@@ -287,6 +287,17 @@
         .card-box img { width: 140px; }
         .oracle-row { flex-direction: column; }
     }
+
+    .share-btn-wrap {
+        margin-top: 10px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .share-btn {
+        color: #e0a458;
+        border-color: #e0a458;
+    }
 {% endblock %}
 
 {% block content %}
@@ -358,25 +369,61 @@
 
     <!-- Yes/No Output Block -->
     {% if session.get('last_yes_no_result') and session.get('last_category') == 'yes_no' %}
-        <div class="reading" style="max-width: 400px; margin: 25px auto; text-align: center; border: 1px solid #39ffb0; padding: 20px; background: rgba(0,255,170,0.03);">
+        <div class="reading" id="shareYesNo" style="max-width: 400px; margin: 25px auto; text-align: center; border: 1px solid #39ffb0; padding: 20px; background: rgba(0,255,170,0.03);">
             <p><strong>{{ t('question_asked') }}</strong> "{{ session['last_yes_no_result']['question'] }}"</p>
             <h2 style="font-size: 2.2em; color: #39ffb0; margin-top: 10px;">{{ t(session['last_yes_no_result']['answer'].lower()) }}</h2>
         </div>
+        <div class="share-btn-wrap">
+            <button type="button" class="button share-btn" data-share-image="shareYesNo" data-share-filename="yes-no.png">{{ t('share') }}</button>
+        </div>
     {% endif %}
 
-    {% if card %}
-        {{ card_box(card, category) }}
+    {% if card and category == 'question' %}
+        <!-- Question: screenshot is the card only. Question text + AI answer go as separate share text. -->
+        <div id="shareQuestionCard">
+            {{ card_box(card, category) }}
+        </div>
+        {% include "partials/oracle_story.html" %}
+        <div class="share-btn-wrap">
+            <script type="application/json" id="captionQuestion">{{ ((session.get('last_question_asked') or '') ~ (('\n\n' ~ story) if story else ''))|tojson }}</script>
+            <button type="button" class="button share-btn"
+                data-share-image="shareQuestionCard"
+                data-share-caption-src="captionQuestion"
+                data-share-filename="question.png">{{ t('share') }}</button>
+        </div>
+    {% elif card %}
+        <div id="shareSingleCard">
+            {{ card_box(card, category) }}
+        </div>
+        <div class="share-btn-wrap">
+            <button type="button" class="button share-btn" data-share-image="shareSingleCard" data-share-filename="card.png">{{ t('share') }}</button>
+        </div>
     {% endif %}
 
     {% if oracle %}
-    <div class="oracle-row">
+    {% set is_prediction = session.get('last_category') == 'prediction' %}
+    {% set row_id = 'sharePredictionRow' if is_prediction else 'shareOracleRow' %}
+    <div class="oracle-row" id="{{ row_id }}">
         {% for card, label in oracle %}
             {{ card_box(card, label) }}
         {% endfor %}
     </div>
     {% endif %}
 
-    {% include "partials/oracle_story.html" %}
+    {% if category != 'question' %}
+        {% include "partials/oracle_story.html" %}
+    {% endif %}
+
+    {% if oracle %}
+    <div class="share-btn-wrap">
+        <!-- Oracle / Prediction-for-two: screenshot is only the cards; the AI text rides along as the share caption, never drawn on the image -->
+        <script type="application/json" id="captionOracle">{{ (story or '')|tojson }}</script>
+        <button type="button" class="button share-btn"
+            data-share-image="{{ row_id }}"
+            data-share-caption-src="captionOracle"
+            data-share-filename="{{ 'prediction.png' if is_prediction else 'oracle.png' }}">{{ t('share') }}</button>
+    </div>
+    {% endif %}
 
     {% if error_message %}
     <p class="card-meaning" style="color: #ff6b6b;">&gt; ERROR: {{ error_message }}</p>
