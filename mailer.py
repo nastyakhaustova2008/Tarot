@@ -1,66 +1,29 @@
 import os
-import socket
-import smtplib
-from contextlib import contextmanager
-from email.mime.text import MIMEText
-
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# These must be set in your .env file (see setup notes).
-EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS")
-EMAIL_APP_PASSWORD = os.environ.get("EMAIL_APP_PASSWORD")
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL")  # must match the verified sender in Brevo
 
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 465  # SSL
-
-# --------------------------------------------------------------------------
-# Some hosts (Render's free/starter containers, in particular) have no
-# outbound IPv6 route. smtp.gmail.com publishes both an IPv4 and an IPv6
-# address, and Python's default resolver sometimes picks the IPv6 one first
-# — which then fails immediately with "[Errno 101] Network is unreachable".
-# Forcing getaddrinfo to only return IPv4 results fixes it, and it's safe:
-# the connection is still made to "smtp.gmail.com" by hostname, so TLS
-# certificate verification is unaffected.
-#
-# IMPORTANT: this is scoped to just the SMTP connection (see
-# _ipv4_only_dns() below) rather than patching socket.getaddrinfo for the
-# whole process. A module-level patch would apply to every connection the
-# app makes for as long as the process runs — including psycopg2's
-# connection to Postgres at startup — which is exactly what caused the
-# earlier deploy hang.
-# --------------------------------------------------------------------------
-_original_getaddrinfo = socket.getaddrinfo
-
-
-def _ipv4_only_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
-    results = _original_getaddrinfo(host, port, family, type, proto, flags)
-    ipv4_results = [r for r in results if r[0] == socket.AF_INET]
-    return ipv4_results or results  # fall back to whatever we got if no IPv4 found
-
-
-@contextmanager
-def _ipv4_only_dns():
-    """Temporarily forces socket.getaddrinfo to IPv4-only, then restores the
-    original resolver — even if an exception is raised inside the block."""
-    socket.getaddrinfo = _ipv4_only_getaddrinfo
-    try:
-        yield
-    finally:
-        socket.getaddrinfo = _original_getaddrinfo
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 
 def send_reset_email(to_email, reset_link):
-    """Sends a password reset email with the given link. Raises an exception
-    if sending fails, so callers should wrap this in a try/except."""
-    if not EMAIL_ADDRESS or not EMAIL_APP_PASSWORD:
+    """Sends a password reset email with the given link, via Brevo's HTTP API
+    (not SMTP). Raises an exception if sending fails, so callers should wrap
+    this in a try/except.
+
+    Uses HTTPS instead of SMTP because Render's free tier blocks outbound
+    traffic on SMTP ports (25, 465, 587), but does not block HTTPS.
+    """
+    if not BREVO_API_KEY or not SENDER_EMAIL:
         raise RuntimeError(
-            "EMAIL_ADDRESS / EMAIL_APP_PASSWORD are not set in your .env file."
+            "BREVO_API_KEY / SENDER_EMAIL are not set in your .env file."
         )
 
-    subject = "Reset your Taro password"
-    body = (
+    body_text = (
         "Hello,\n\n"
         "We received a request to reset the password for your Taro account.\n\n"
         f"Click the link below to choose a new password:\n{reset_link}\n\n"
@@ -69,12 +32,20 @@ def send_reset_email(to_email, reset_link):
         "— Taro"
     )
 
-    message = MIMEText(body)
-    message["Subject"] = subject
-    message["From"] = EMAIL_ADDRESS
-    message["To"] = to_email
+    payload = {
+        "sender": {"email": SENDER_EMAIL, "name": "Taro"},
+        "to": [{"email": to_email}],
+        "subject": "Reset your Taro password",
+        "textContent": body_text,
+    }
+    headers = {
+        "api-key": BREVO_API_KEY,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
 
-    with _ipv4_only_dns():
-        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as server:
-            server.login(EMAIL_ADDRESS, EMAIL_APP_PASSWORD)
-            server.sendmail(EMAIL_ADDRESS, to_email, message.as_string())
+    response = requests.post(BREVO_API_URL, json=payload, headers=headers, timeout=10)
+    if response.status_code >= 300:
+        raise RuntimeError(
+            f"Brevo email send failed ({response.status_code}): {response.text}"
+        )
