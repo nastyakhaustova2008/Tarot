@@ -1,4 +1,5 @@
 import os
+import socket
 import smtplib
 from email.mime.text import MIMEText
 
@@ -12,6 +13,26 @@ EMAIL_APP_PASSWORD = os.environ.get("EMAIL_APP_PASSWORD")
 
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 465  # SSL
+
+# --------------------------------------------------------------------------
+# Some hosts (Render's free/starter containers, in particular) have no
+# outbound IPv6 route. smtp.gmail.com publishes both an IPv4 and an IPv6
+# address, and Python's default resolver sometimes picks the IPv6 one first
+# — which then fails immediately with "[Errno 101] Network is unreachable".
+# Forcing getaddrinfo to only return IPv4 results fixes it, and it's safe:
+# the connection is still made to "smtp.gmail.com" by hostname, so TLS
+# certificate verification is unaffected.
+# --------------------------------------------------------------------------
+_original_getaddrinfo = socket.getaddrinfo
+
+
+def _ipv4_only_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    results = _original_getaddrinfo(host, port, family, type, proto, flags)
+    ipv4_results = [r for r in results if r[0] == socket.AF_INET]
+    return ipv4_results or results  # fall back to whatever we got if no IPv4 found
+
+
+socket.getaddrinfo = _ipv4_only_getaddrinfo
 
 
 def send_reset_email(to_email, reset_link):
