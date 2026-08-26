@@ -1,0 +1,5 @@
+from mailer import EMAIL_ADDRESS, EMAIL_APP_PASSWORD
+
+print("EMAIL_ADDRESS:", repr(EMAIL_ADDRESS))
+print("EMAIL_APP_PASSWORD:", repr(EMAIL_APP_PASSWORD))
+print("Password length:", len(EMAIL_APP_PASSWORD) if EMAIL_APP_PASSWORD else 0)

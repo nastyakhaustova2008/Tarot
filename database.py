@@ -1,6 +1,8 @@
 import os
 import uuid
+import secrets
 from contextlib import contextmanager
+from datetime import datetime, timedelta
 
 import psycopg2
 from dotenv import load_dotenv
@@ -84,6 +86,120 @@ def create_table():
                 PRIMARY KEY (text, lang)
             )
         """)
+
+        # 4. Users Table — this table already existed in this project (id, username,
+        # password_hash, created_at). We only add the columns our login/lockout
+        # logic needs, instead of assuming a schema.
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE,
+                password_hash TEXT,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT")
+        cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_attempts INTEGER DEFAULT 0")
+        cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP")
+        cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT")
+
+        # 5. Password Reset Tokens Table — one row per reset request. Tokens are
+        # random, single-use, and expire after a short window.
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                token TEXT PRIMARY KEY,
+                username TEXT NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                used BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+
+
+# ---------------------------------------------------------------
+# USER ACCOUNT HELPERS (login / register / lockout)
+# ---------------------------------------------------------------
+
+def get_user(username):
+    """Returns (username, password_hash, gender, failed_attempts, locked_until, email) or None."""
+    with get_cursor() as cursor:
+        cursor.execute("""
+            SELECT username, password_hash, gender, failed_attempts, locked_until, email
+            FROM users WHERE username = %s
+        """, (username,))
+        return cursor.fetchone()
+
+
+def create_user(username, password_hash, gender, email):
+    with get_cursor(commit=True) as cursor:
+        cursor.execute("""
+            INSERT INTO users (username, password_hash, gender, failed_attempts, locked_until, email)
+            VALUES (%s, %s, %s, 0, NULL, %s)
+        """, (username, password_hash, gender, email))
+
+
+def record_failed_login(username, failed_attempts, locked_until=None):
+    """Updates the attempt counter, and sets locked_until when the account gets locked."""
+    with get_cursor(commit=True) as cursor:
+        cursor.execute("""
+            UPDATE users SET failed_attempts = %s, locked_until = %s
+            WHERE username = %s
+        """, (failed_attempts, locked_until, username))
+
+
+def reset_login_attempts(username):
+    """Called after a successful login (or once a lockout period has expired)."""
+    with get_cursor(commit=True) as cursor:
+        cursor.execute("""
+            UPDATE users SET failed_attempts = 0, locked_until = NULL
+            WHERE username = %s
+        """, (username,))
+
+
+def get_user_email(username):
+    """Returns just the stored email for a username, or None."""
+    with get_cursor() as cursor:
+        cursor.execute("SELECT email FROM users WHERE username = %s", (username,))
+        row = cursor.fetchone()
+        return row[0] if row else None
+
+
+def create_reset_token(username, expires_minutes=60):
+    """Generates a random, single-use token for this username and stores it
+    with an expiry time. Returns the raw token (to embed in the emailed link)."""
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now() + timedelta(minutes=expires_minutes)
+    with get_cursor(commit=True) as cursor:
+        cursor.execute("""
+            INSERT INTO password_reset_tokens (token, username, expires_at, used)
+            VALUES (%s, %s, %s, FALSE)
+        """, (token, username, expires_at))
+    return token
+
+
+def get_reset_token(token):
+    """Returns (token, username, expires_at, used) or None."""
+    with get_cursor() as cursor:
+        cursor.execute("""
+            SELECT token, username, expires_at, used
+            FROM password_reset_tokens WHERE token = %s
+        """, (token,))
+        return cursor.fetchone()
+
+
+def mark_reset_token_used(token):
+    with get_cursor(commit=True) as cursor:
+        cursor.execute("UPDATE password_reset_tokens SET used = TRUE WHERE token = %s", (token,))
+
+
+def update_password(username, new_password_hash):
+    """Sets a new password hash and clears any lockout state on the account."""
+    with get_cursor(commit=True) as cursor:
+        cursor.execute("""
+            UPDATE users
+            SET password_hash = %s, failed_attempts = 0, locked_until = NULL
+            WHERE username = %s
+        """, (new_password_hash, username))
 
 
 def save_reading_full(user_name, category, card_name, meaning, orientation, group_id=None,

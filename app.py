@@ -4,11 +4,14 @@ from urllib.parse import urlparse
 from flask import Flask, render_template, session, redirect, request
 from markupsafe import Markup, escape
 from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash, check_password_hash
+from mailer import send_reset_email
 from card_model import Card
 from tarot_ai import generate_question_answer, generate_two_person_prediction
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 import database as Tarot_database
 from exceptions import TarotAPIError
@@ -24,6 +27,14 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 app = Flask(__name__)
 app.secret_key = "change_this_to_something_random"
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
+# ---------------------------------------------------------------
+# Account / login-security settings
+# ---------------------------------------------------------------
+MAX_LOGIN_ATTEMPTS = 3
+LOCKOUT_DURATION = timedelta(hours=1)
+RESET_TOKEN_LIFETIME_MINUTES = 60
 
 Tarot_database.create_table()
 
@@ -68,8 +79,15 @@ MICHAEL_KOT_NORMALIZED = normalize_name("Michael Kot")
 @app.route("/")
 def home():
     if "user_name" not in session:
-        error = session.pop("login_error", None)
-        return render_template("login.html", error=error)
+        login_error = session.pop("login_error", None)
+        register_error = session.pop("register_error", None)
+        show_register = session.pop("show_register", False)
+        return render_template(
+            "login.html",
+            login_error=login_error,
+            register_error=register_error,
+            show_register=show_register,
+        )
 
     card = session.get("last_card")
     category = session.get("last_category")
@@ -82,21 +100,161 @@ def home():
     return render_template("home.html", card=card, category=category, oracle=oracle, story=story)
 
 
+@app.route("/register", methods=["POST"])
+def register():
+    user_name = request.form["user_name"].strip()
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
+    password_confirm = request.form.get("password_confirm", "")
+    gender = request.form.get("gender")
+
+    def fail(message):
+        session["register_error"] = message
+        session["show_register"] = True
+        return redirect("/")
+
+    if not user_name or user_name.isdigit():
+        return fail(t("invalid_name"))
+    if normalize_name(user_name) == MICHAEL_KOT_NORMALIZED:
+        return fail(t("michael_kot_msg"))
+    if gender != "man" and gender != "woman":
+        return fail(t("invalid_gender"))
+    if not email or "@" not in email or "." not in email.split("@")[-1]:
+        return fail("Please enter a valid email address — it's needed to reset your password later.")
+    if not password:
+        return fail("Please enter a password.")
+    if password != password_confirm:
+        return fail("Passwords do not match. Please try again.")
+    if len(password) < 4:
+        return fail("Password must be at least 4 characters long.")
+
+    if Tarot_database.get_user(user_name):
+        return fail("This username is already taken. Please choose another one.")
+
+    password_hash = generate_password_hash(password)
+    Tarot_database.create_user(user_name, password_hash, gender, email)
+
+    session["user_name"] = user_name
+    session["gender"] = gender
+    return redirect("/")
+
+
+@app.route("/forgot_password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "GET":
+        message = session.pop("forgot_message", None)
+        return render_template("forgot_password.html", message=message)
+
+    user_name = request.form.get("username", "").strip()
+
+    # Always show the same message regardless of outcome, so we don't reveal
+    # whether a given username exists in the system.
+    generic_message = t("reset_link_sent_message")
+
+    user_row = Tarot_database.get_user(user_name)
+    if user_row:
+        _, _, _, _, _, email = user_row
+        if email:
+            token = Tarot_database.create_reset_token(user_name, expires_minutes=RESET_TOKEN_LIFETIME_MINUTES)
+            reset_link = get_base_url() + "/reset_password/" + token
+            try:
+                send_reset_email(email, reset_link)
+            except Exception as error:
+                # Don't expose email/SMTP failures to the visitor — log server-side instead.
+                print("Failed to send password reset email:", error)
+
+    session["forgot_message"] = generic_message
+    return redirect("/forgot_password")
+
+
+def get_base_url():
+    codespace_name = os.environ.get("CODESPACE_NAME")
+    if codespace_name:
+        domain = os.environ.get("GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN", "app.github.dev")
+        return f"https://{codespace_name}-5000.{domain}"
+    return request.host_url.rstrip("/")
+
+
+@app.route("/reset_password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    token_row = Tarot_database.get_reset_token(token)
+
+    if not token_row:
+        return render_template("reset_password.html", invalid=True)
+
+    _, user_name, expires_at, used = token_row
+
+    if used or datetime.now() > expires_at:
+        return render_template("reset_password.html", invalid=True)
+
+    if request.method == "GET":
+        error = session.pop("reset_error", None)
+        return render_template("reset_password.html", invalid=False, token=token, error=error)
+
+    password = request.form.get("password", "")
+    password_confirm = request.form.get("password_confirm", "")
+
+    if not password or password != password_confirm:
+        session["reset_error"] = "Passwords do not match. Please try again."
+        return redirect(f"/reset_password/{token}")
+    if len(password) < 4:
+        session["reset_error"] = "Password must be at least 4 characters long."
+        return redirect(f"/reset_password/{token}")
+
+    new_hash = generate_password_hash(password)
+    Tarot_database.update_password(user_name, new_hash)
+    Tarot_database.mark_reset_token_used(token)
+
+    session["login_error"] = "Your password has been reset. Please log in with your new password."
+    return redirect("/")
+
+
 @app.route("/login", methods=["POST"])
 def login():
     user_name = request.form["user_name"].strip()
-    gender = request.form["gender"]
+    password = request.form.get("password", "")
 
-    if not user_name or user_name.isdigit():
+    if not user_name:
         session["login_error"] = t("invalid_name")
         return redirect("/")
-    if normalize_name(user_name) == MICHAEL_KOT_NORMALIZED:
-        session["login_error"] = t("michael_kot_msg")
-        return redirect("/")
-    if gender != "man" and gender != "woman":
-        session["login_error"] = t("invalid_gender")
+
+    user_row = Tarot_database.get_user(user_name)
+    if not user_row:
+        session["login_error"] = "No account found with that username. Please register first."
         return redirect("/")
 
+    _, password_hash, gender, failed_attempts, locked_until, email = user_row
+
+    # Still locked out?
+    if locked_until and datetime.now() < locked_until:
+        minutes_left = max(1, int((locked_until - datetime.now()).total_seconds() // 60) + 1)
+        session["login_error"] = (
+            f"Too many failed attempts. Try again in {minutes_left} minute(s), "
+            f"or reset your password right away using the link below."
+        )
+        return redirect("/")
+
+    # Lock period has expired -> treat as a fresh start generic_message
+    if locked_until and datetime.now() >= locked_until:
+        failed_attempts = 0
+
+    if not check_password_hash(password_hash, password):
+        failed_attempts += 1
+        if failed_attempts >= MAX_LOGIN_ATTEMPTS:
+            new_locked_until = datetime.now() + LOCKOUT_DURATION
+            Tarot_database.record_failed_login(user_name, 0, new_locked_until)
+            session["login_error"] = (
+                "Incorrect password 3 times. This account is temporarily locked for 1 hour. "
+                "You can reset your password right away using the link below instead of waiting."
+            )
+        else:
+            Tarot_database.record_failed_login(user_name, failed_attempts, None)
+            remaining = MAX_LOGIN_ATTEMPTS - failed_attempts
+            session["login_error"] = f"Incorrect password. {remaining} attempt(s) remaining."
+        return redirect("/")
+
+    # Success — gender comes from the DB, never re-entered
+    Tarot_database.reset_login_attempts(user_name)
     session["user_name"] = user_name
     session["gender"] = gender
     return redirect("/")

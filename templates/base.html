@@ -188,6 +188,51 @@
             margin-right: auto;
         }
 
+        /* Shared column width so heading, description text, and the form
+           all line up instead of long sentences overflowing full-width */
+        .page-content {
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Amber "forgot password" / "back to login" buttons — matches existing
+           amber accent (#e0a458) and hover shades (#6b5537 / #a3835a) already
+           used elsewhere in the theme. */
+        .btn-amber {
+            display: inline-block;
+            background: transparent;
+            color: #e0a458;
+            border: 1px solid #6b5537;
+            text-decoration: none;
+            padding: 10px 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+            border-radius: 2px;
+            margin-top: 10px;
+            transition: all 0.15s ease-in-out;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-amber:hover {
+            background: rgba(224, 164, 88, 0.1);
+            border-color: #e0a458;
+            color: #f5c78e;
+        }
+
+        /* Use inside a left-aligned form to center the button under the field above it,
+           and match the input field's width (220px + 2*8px padding = 236px) */
+        .btn-block {
+            display: block;
+            width: 236px;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
         @media (max-width: 600px) {
             h1 { font-size: 1.8em; letter-spacing: 3px; }
     

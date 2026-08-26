@@ -4,25 +4,77 @@
 
 {% block content %}
     <h1>Taro</h1>
-    <p>{{ t('login_prompt') }}</p>
 
-    {% if error %}
-    <p class="error">{{ error }}</p>
-    {% endif %}
+    <div class="auth-tabs">
+        <button type="button" id="tabLoginBtn" class="tab-btn" onclick="showAuthForm('login')">{{ t('log_in') }}</button>
+        <button type="button" id="tabRegisterBtn" class="tab-btn" onclick="showAuthForm('register')">{{ t('register') }}</button>
+    </div>
 
-    <form action="/login" method="POST">
-        <label for="user_name">{{ t('name_label') }}</label>
-        <input type="text" id="user_name" name="user_name" required>
+    <!-- LOGIN -->
+    <div id="loginFormWrap">
+        <p>{{ t('login_prompt') }}</p>
 
-        <label for="gender">{{ t('gender_label') }}</label>
-        <select id="gender" name="gender">
-            <option value="man">{{ t('man') }}</option>
-            <option value="woman">{{ t('woman') }}</option>
-        </select>
+        {% if login_error %}
+        <p class="error">{{ login_error }}</p>
+        {% endif %}
 
-        <br>
-        <button type="submit">{{ t('enter') }}</button>
-    </form>
+        <form action="/login" method="POST">
+            <label for="login_user_name">{{ t('name_label') }}</label>
+            <input type="text" id="login_user_name" name="user_name" required>
+
+            <label for="login_password">{{ t('password_label') }}</label>
+            <input type="password" id="login_password" name="password" required>
+
+            <br>
+            <button type="submit">{{ t('enter') }}</button>
+        </form>
+
+        <p><a href="/forgot_password" class="btn-amber">{{ t('forgot_password') }}</a></p>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="registerFormWrap" style="display:none;">
+        <p>{{ t('create_account') }}</p>
+
+        {% if register_error %}
+        <p class="error">{{ register_error }}</p>
+        {% endif %}
+
+        <form action="/register" method="POST">
+            <label for="reg_user_name">{{ t('name_label') }}</label>
+            <input type="text" id="reg_user_name" name="user_name" required>
+
+            <label for="reg_email">{{ t('email_label') }}</label>
+            <input type="email" id="reg_email" name="email" required>
+
+            <label for="reg_password">{{ t('password_label') }}</label>
+            <input type="password" id="reg_password" name="password" required>
+
+            <label for="reg_password_confirm">{{ t('confirm_password_label') }}</label>
+            <input type="password" id="reg_password_confirm" name="password_confirm" required>
+
+            <label for="reg_gender">{{ t('gender_label') }}</label>
+            <select id="reg_gender" name="gender">
+                <option value="man">{{ t('man') }}</option>
+                <option value="woman">{{ t('woman') }}</option>
+            </select>
+
+            <br>
+            <button type="submit">{{ t('register') }}</button>
+        </form>
+    </div>
 
     <p class="disclaimer">{{ t('disclaimer') }}</p>
+
+    <script>
+        function showAuthForm(which) {
+            document.getElementById('loginFormWrap').style.display = (which === 'login') ? 'block' : 'none';
+            document.getElementById('registerFormWrap').style.display = (which === 'register') ? 'block' : 'none';
+            document.getElementById('tabLoginBtn').classList.toggle('active', which === 'login');
+            document.getElementById('tabRegisterBtn').classList.toggle('active', which === 'register');
+        }
+
+        // Open on the Register tab automatically if a registration attempt just failed
+        showAuthForm({{ ('register' if show_register else 'login') | tojson }});
+    </script>
 {% endblock %}
