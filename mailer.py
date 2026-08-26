@@ -1,6 +1,7 @@
 import os
 import socket
 import smtplib
+from contextlib import contextmanager
 from email.mime.text import MIMEText
 
 from dotenv import load_dotenv
@@ -22,6 +23,13 @@ SMTP_PORT = 465  # SSL
 # Forcing getaddrinfo to only return IPv4 results fixes it, and it's safe:
 # the connection is still made to "smtp.gmail.com" by hostname, so TLS
 # certificate verification is unaffected.
+#
+# IMPORTANT: this is scoped to just the SMTP connection (see
+# _ipv4_only_dns() below) rather than patching socket.getaddrinfo for the
+# whole process. A module-level patch would apply to every connection the
+# app makes for as long as the process runs — including psycopg2's
+# connection to Postgres at startup — which is exactly what caused the
+# earlier deploy hang.
 # --------------------------------------------------------------------------
 _original_getaddrinfo = socket.getaddrinfo
 
@@ -32,7 +40,15 @@ def _ipv4_only_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
     return ipv4_results or results  # fall back to whatever we got if no IPv4 found
 
 
-socket.getaddrinfo = _ipv4_only_getaddrinfo
+@contextmanager
+def _ipv4_only_dns():
+    """Temporarily forces socket.getaddrinfo to IPv4-only, then restores the
+    original resolver — even if an exception is raised inside the block."""
+    socket.getaddrinfo = _ipv4_only_getaddrinfo
+    try:
+        yield
+    finally:
+        socket.getaddrinfo = _original_getaddrinfo
 
 
 def send_reset_email(to_email, reset_link):
@@ -58,6 +74,7 @@ def send_reset_email(to_email, reset_link):
     message["From"] = EMAIL_ADDRESS
     message["To"] = to_email
 
-    with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as server:
-        server.login(EMAIL_ADDRESS, EMAIL_APP_PASSWORD)
-        server.sendmail(EMAIL_ADDRESS, to_email, message.as_string())
+    with _ipv4_only_dns():
+        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as server:
+            server.login(EMAIL_ADDRESS, EMAIL_APP_PASSWORD)
+            server.sendmail(EMAIL_ADDRESS, to_email, message.as_string())
