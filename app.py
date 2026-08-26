@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 from card_model import Card
 from tarot_ai import generate_question_answer, generate_two_person_prediction
 import random
+from datetime import datetime
+import re
 
 import database as Tarot_database
 from exceptions import TarotAPIError
@@ -14,6 +16,8 @@ from user_model import User
 from i18n import t, tr, TRANSLATIONS
 from tarot_ai import generate_oracle_story  # noqa: F401 (kept for parity with original imports)
 from i18n import translate_meaning
+from translations import MONTHS
+
 
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -415,35 +419,54 @@ def calendar_view():
     user_name = session.get('user_name')
     current_lang = session.get('lang', 'en')
 
-    raw_calendar_data = Tarot_database.get_calendar_data(user_name)
+    raw_calendar_data = Tarot_database.get_calendar_data(user_name, current_lang)
 
-    # Safely pre-translate dynamic fields only if language is non-English
-    if current_lang != 'en' and raw_calendar_data:
-        for month_label, days in raw_calendar_data.items():
-            if not isinstance(days, dict):
+    month_param = request.args.get('month', '')
+    if re.match(r'^\d{4}-\d{2}$', month_param):
+        selected_key = month_param
+    elif raw_calendar_data:
+        selected_key = max(raw_calendar_data.keys())
+    else:
+        selected_key = datetime.now().strftime('%Y-%m')
+
+    year, month = (int(part) for part in selected_key.split('-'))
+
+    month_entry = raw_calendar_data.get(selected_key)
+    days = month_entry['days'] if month_entry else {}
+
+    if current_lang != 'en' and days:
+        for day_num, predictions in days.items():
+            if not isinstance(predictions, list):
                 continue
-            for day_num, predictions in days.items():
-                if not isinstance(predictions, list):
+            for pred in predictions:
+                if not isinstance(pred, dict):
                     continue
-                for pred in predictions:
-                    if not isinstance(pred, dict):
-                        continue
+                if pred.get('ai_response') and isinstance(pred['ai_response'], str):
+                    pred['ai_response'] = translate_meaning(pred['ai_response'], current_lang)
+                if pred.get('question') and isinstance(pred['question'], str):
+                    pred['question'] = translate_meaning(pred['question'], current_lang)
+                cards = pred.get('cards')
+                if isinstance(cards, list):
+                    for card in cards:
+                        if isinstance(card, dict) and card.get('meaning') and isinstance(card['meaning'], str):
+                            card['meaning'] = translate_meaning(card['meaning'], current_lang)
 
-                    # Safely handle strings
-                    if pred.get('ai_response') and isinstance(pred['ai_response'], str):
-                        pred['ai_response'] = translate_meaning(pred['ai_response'], current_lang)
+    months_table = MONTHS.get(current_lang, MONTHS['en'])
+    month_label = f"{months_table.get(month, month)} {year}"
 
-                    if pred.get('question') and isinstance(pred['question'], str):
-                        pred['question'] = translate_meaning(pred['question'], current_lang)
+    prev_year, prev_month = (year, month - 1) if month > 1 else (year - 1, 12)
+    next_year, next_month = (year, month + 1) if month < 12 else (year + 1, 1)
 
-                    # Safely handle cards list
-                    cards = pred.get('cards')
-                    if isinstance(cards, list):
-                        for card in cards:
-                            if isinstance(card, dict) and card.get('meaning') and isinstance(card['meaning'], str):
-                                card['meaning'] = translate_meaning(card['meaning'], current_lang)
+    before_first_prediction = bool(raw_calendar_data) and selected_key < min(raw_calendar_data.keys())
+    return render_template(
+        'calendar.html',
+        days=days,
+        month_label=month_label,
+        prev_month=f"{prev_year:04d}-{prev_month:02d}",
+        next_month=f"{next_year:04d}-{next_month:02d}",
+        before_first_prediction=before_first_prediction,
 
-    return render_template('calendar.html', calendar_data=raw_calendar_data)
+    )
 
 from flask import request, render_template, session
 

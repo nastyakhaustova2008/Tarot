@@ -4,6 +4,7 @@ from contextlib import contextmanager
 
 import psycopg2
 from dotenv import load_dotenv
+from translations import MONTHS
 
 load_dotenv()
 
@@ -246,11 +247,12 @@ def save_cached_translation(text, lang, translated):
         """, (text, lang, translated))
 
 
-def get_calendar_predictions(user_name):
+def get_calendar_predictions(user_name, lang="en"):
     """Returns predictions grouped by calendar day (date -> list of prediction dicts).
     Oracle draws (3 cards) and Two-person predictions (2 cards) are folded into a
     single prediction dict each, since they share a group_id — so the Calendar page
     shows one square per prediction, not one square per card."""
+    months = MONTHS.get(lang, MONTHS["en"])
     with get_cursor() as cursor:
         cursor.execute("""
             SELECT id, category, card_name, meaning, orientation, group_id,
@@ -340,25 +342,27 @@ def get_calendar_predictions(user_name):
         dt = pred.get("created_at")
         if not dt:
             continue
-            
-        month_label = dt.strftime("%B %Y")  # e.g., "August 2026"
-        day_num = dt.strftime("%d %B %Y")   # e.g., "25 August 2026"
 
-        if month_label not in calendar_data:
-            calendar_data[month_label] = {}
+        month_name = months.get(dt.month, dt.strftime("%B"))
+        month_key = f"{dt.year:04d}-{dt.month:02d}"              # e.g., "2026-08" (sortable, for navigation)
+        month_label = f"{month_name} {dt.year}"                  # e.g., "August 2026"
+        day_num = f"{dt.day:02d} {month_name} {dt.year}"         # e.g., "25 August 2026"
 
-        if day_num not in calendar_data[month_label]:
-            calendar_data[month_label][day_num] = []
+        if month_key not in calendar_data:
+            calendar_data[month_key] = {"month_label": month_label, "days": {}}
 
-        calendar_data[month_label][day_num].append(pred)
+        if day_num not in calendar_data[month_key]["days"]:
+            calendar_data[month_key]["days"][day_num] = []
+
+        calendar_data[month_key]["days"][day_num].append(pred)
 
     return calendar_data
 
-def get_calendar_data(user_name):
+def get_calendar_data(user_name, lang="en"):
     """Bridge function that returns predictions structured for calendar.html"""
-    return get_calendar_predictions(user_name)
+    return get_calendar_predictions(user_name, lang)
 
 
-def get_user_calendar(user_name):
+def get_user_calendar(user_name, lang="en"):
     """Fetches and structures calendar data for the specified user."""
-    return get_calendar_predictions(user_name)
+    return get_calendar_predictions(user_name, lang)

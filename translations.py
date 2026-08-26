@@ -79,6 +79,7 @@ TRANSLATIONS = {
         "calendar": "Calendar",
         "calendar_intro": "here is your reading history by day.",
         "calendar_empty": "You haven't gotten any predictions yet.",
+        "calendar_empty_before": "You haven't gotten any predictions.",
         "for": "for",
         "view_note": "View / edit note",
         "back": "Back",
@@ -163,6 +164,7 @@ TRANSLATIONS = {
         "calendar": "לוח שנה",
         "calendar_intro": "הנה היסטוריית התחזיות שלך לפי ימים.",
         "calendar_empty": "עדיין אין לך תחזיות.",
+        "calendar_empty_before": "אין לך תחזיות.",
         "for": "עבור",
         "view_note": "צפייה / עריכת הערה",
         "back": "חזרה",
@@ -247,8 +249,28 @@ TRANSLATIONS = {
         "calendar": "Календар",
         "calendar_intro": "ось твоя історія прогнозів за днями.",
         "calendar_empty": "У тебе ще немає жодного прогнозу.",
+        "calendar_empty_before": "У тебе немає жодного прогнозу.",
         "for": "для",
         "view_note": "Переглянути / редагувати нотатку",
         "back": "Назад",
+    },
+}
+
+# Month names for calendar date formatting, indexed 1-12 (January = 1).
+MONTHS = {
+    "en": {
+        1: "January", 2: "February", 3: "March", 4: "April",
+        5: "May", 6: "June", 7: "July", 8: "August",
+        9: "September", 10: "October", 11: "November", 12: "December",
+    },
+    "he": {
+        1: "ינואר", 2: "פברואר", 3: "מרץ", 4: "אפריל",
+        5: "מאי", 6: "יוני", 7: "יולי", 8: "אוגוסט",
+        9: "ספטמבר", 10: "אוקטובר", 11: "נובמבר", 12: "דצמבר",
+    },
+    "uk": {
+        1: "Січень", 2: "Лютий", 3: "Березень", 4: "Квітень",
+        5: "Травень", 6: "Червень", 7: "Липень", 8: "Серпень",
+        9: "Вересень", 10: "Жовтень", 11: "Листопад", 12: "Грудень",
     },
 }

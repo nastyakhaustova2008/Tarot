@@ -54,6 +54,33 @@
     .calendar-month { margin-top: 34px; }
     .calendar-day { margin: 18px 0 30px 0; }
 
+    .calendar-month-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        margin-top: 0;
+    }
+
+    .calendar-month-nav-btn {
+        background: rgba(0, 30, 22, 0.6);
+        border: 1px solid rgba(57, 255, 176, 0.4);
+        color: #39ffb0;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 1.1em;
+        border-radius: 4px;
+        padding: 4px 14px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .calendar-month-nav-btn:hover {
+        background: #39ffb0;
+        color: #0a1412;
+        box-shadow: 0 0 12px rgba(57, 255, 176, 0.5);
+    }
+
     .calendar-day-header {
         color: #39ffb0;
         font-family: 'Share Tech Mono', monospace;
@@ -349,17 +376,20 @@
               fill="none" stroke="#39ffb0" stroke-width="1.5" opacity="0.5"/>
     </svg>
 
-    {% if not calendar_data %}
-        <p class="disclaimer">{{ t('calendar_empty') }}</p>
+    <div class="calendar-month-nav">
+        <a class="calendar-month-nav-btn" href="/calendar?month={{ prev_month }}">&lt;</a>
+        <h2 class="section-label">// {{ month_label }}</h2>
+        <a class="calendar-month-nav-btn" href="/calendar?month={{ next_month }}">&gt;</a>
+    </div>
+
+    {% if not days %}
+        <p class="disclaimer">{{ t('calendar_empty_before') if before_first_prediction else t('calendar_empty') }}</p>
     {% endif %}
 
-    {% for month_label, days in calendar_data.items() %}
-        <div class="calendar-month">
-            <h2 class="section-label">// {{ month_label }}</h2>
-
-            {% for day_num, predictions in days.items() %}
+    <div class="calendar-month">
+        {% for day_num, predictions in days.items() %}
                 <div class="calendar-day">
-                    <h3 class="calendar-day-header">{{ day_num }} {{ month_label }}</h3>
+                    <h3 class="calendar-day-header">{{ day_num }}</h3>
 
                     <div class="prediction-grid">
                         {% for pred in predictions %}
@@ -457,7 +487,7 @@
                 </div>
             {% endfor %}
         </div>
-    {% endfor %}
+    </div>
 </div>
 
 <!-- Card Zoom Modal -->
