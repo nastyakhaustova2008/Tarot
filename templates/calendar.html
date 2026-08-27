@@ -403,7 +403,7 @@
                                         {% elif pred.type == 'yes_no' %}{{ t('ask_yes_no') }}
                                         {% endif %}
                                     </span>
-                                    <span class="prediction-time">{{ pred.created_at.strftime('%H:%M') if pred.created_at else '' }}</span>
+                                    <span class="prediction-time" data-utc="{{ (pred.created_at.isoformat() ~ 'Z') if pred.created_at else '' }}"></span>
                                 </div>
 
                                 {% if pred.type in ('single', 'question', 'oracle', 'two_person') %}
@@ -524,4 +524,15 @@
 </script>
 
 {{ mushroom_nav('back') }}
+
+<script>
+    document.querySelectorAll('.prediction-time[data-utc]').forEach(function (el) {
+        var utc = el.getAttribute('data-utc');
+        if (!utc) return;
+        var d = new Date(utc);
+        if (isNaN(d.getTime())) return;
+        el.textContent = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+    });
+</script>
+
 {% endblock %}
