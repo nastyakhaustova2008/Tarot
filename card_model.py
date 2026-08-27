@@ -1,32 +1,32 @@
 MAJOR_ARCANA_FILES = {
-    "The Fool": "major_arcana_fool.png",
-    "The Magician": "major_arcana_magician.png",
-    "The High Priestess": "major_arcana_priestess.png",
-    "The Empress": "major_arcana_empress.png",
-    "The Emperor": "major_arcana_emperor.png",
-    "The Hierophant": "major_arcana_hierophant.png",
-    "The Lovers": "major_arcana_lovers.png",
-    "The Chariot": "major_arcana_chariot.png",
-    "Strength": "major_arcana_strength.png",
-    "The Hermit": "major_arcana_hermit.png",
-    "Wheel of Fortune": "major_arcana_fortune.png",
-    "Justice": "major_arcana_justice.png",
-    "The Hanged Man": "major_arcana_hanged.png",
-    "Death": "major_arcana_death.png",
-    "Temperance": "major_arcana_temperance.png",
-    "The Devil": "major_arcana_devil.png",
-    "The Tower": "major_arcana_tower.png",
-    "The Star": "major_arcana_star.png",
-    "The Moon": "major_arcana_moon.png",
-    "The Sun": "major_arcana_sun.png",
-    "Judgement": "major_arcana_judgement.png",
-    "The World": "major_arcana_world.png",
+    "The Fool": "major_arcana_fool.webp",
+    "The Magician": "major_arcana_magician.webp",
+    "The High Priestess": "major_arcana_priestess.webp",
+    "The Empress": "major_arcana_empress.webp",
+    "The Emperor": "major_arcana_emperor.webp",
+    "The Hierophant": "major_arcana_hierophant.webp",
+    "The Lovers": "major_arcana_lovers.webp",
+    "The Chariot": "major_arcana_chariot.webp",
+    "Strength": "major_arcana_strength.webp",
+    "The Hermit": "major_arcana_hermit.webp",
+    "Wheel of Fortune": "major_arcana_fortune.webp",
+    "Justice": "major_arcana_justice.webp",
+    "The Hanged Man": "major_arcana_hanged.webp",
+    "Death": "major_arcana_death.webp",
+    "Temperance": "major_arcana_temperance.webp",
+    "The Devil": "major_arcana_devil.webp",
+    "The Tower": "major_arcana_tower.webp",
+    "The Star": "major_arcana_star.webp",
+    "The Moon": "major_arcana_moon.webp",
+    "The Sun": "major_arcana_sun.webp",
+    "Judgement": "major_arcana_judgement.webp",
+    "The World": "major_arcana_world.webp",
 }
 
 MAJOR_ARCANA_ALIASES = {
-    "the last judgment": "major_arcana_judgement.png",
-    "judgment": "major_arcana_judgement.png",
-    "fortitude": "major_arcana_strength.png",
+    "the last judgment": "major_arcana_judgement.webp",
+    "judgment": "major_arcana_judgement.webp",
+    "fortitude": "major_arcana_strength.webp",
 }
 
 RANK_TO_CODE = {
@@ -54,7 +54,7 @@ def get_image_filename(card_name):
         rank, suit = parts
         rank_code = RANK_TO_CODE.get(rank.title(), rank.lower())
         suit_code = suit.lower()
-        return f"minor_arcana_{suit_code}_{rank_code}.png"
+        return f"minor_arcana_{suit_code}_{rank_code}.webp"
 
     return None
 

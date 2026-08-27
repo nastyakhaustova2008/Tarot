@@ -3,14 +3,17 @@ import uuid
 import secrets
 from contextlib import contextmanager
 from datetime import datetime, timedelta
-
 import psycopg2
+from psycopg2 import pool as pg_pool
+
 from dotenv import load_dotenv
 from translations import MONTHS
 
 load_dotenv()
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
+
+_pool = pg_pool.SimpleConnectionPool(1, 10, DATABASE_URL)
 
 
 def create_connection():
@@ -19,16 +22,20 @@ def create_connection():
 
 @contextmanager
 def get_cursor(commit=False):
-    """Opens a connection/cursor, always closes the connection afterward
-    (even if an error happens), and commits only if commit=True."""
-    connection = create_connection()
+    """Borrows a connection from the pool instead of opening a new TCP/TLS
+    connection every call, and returns it to the pool afterward instead of
+    closing it — this is what was making every DB hit (translation cache
+    lookups especially, since there can be a dozen per page) pay full
+    connection-setup cost."""
+    connection = _pool.getconn()
     try:
         cursor = connection.cursor()
         yield cursor
         if commit:
             connection.commit()
     finally:
-        connection.close()
+        cursor.close()
+        _pool.putconn(connection)
 
 
 def create_table():
@@ -62,7 +69,9 @@ def create_table():
             "target_name": "TEXT",
             "created_at": "TIMESTAMP DEFAULT NOW()",
             "image_filename": "TEXT",
+            "response_lang": "TEXT",
         }
+
         for column_name, column_type in new_columns.items():
             cursor.execute(f"ALTER TABLE readings ADD COLUMN IF NOT EXISTS {column_name} {column_type}")
 
@@ -76,6 +85,7 @@ def create_table():
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        cursor.execute("ALTER TABLE oracle_stories ADD COLUMN IF NOT EXISTS response_lang TEXT")
 
         # 3. Translation Cache Table
         cursor.execute("""
@@ -203,15 +213,16 @@ def update_password(username, new_password_hash):
 
 
 def save_reading_full(user_name, category, card_name, meaning, orientation, group_id=None,
-                       question=None, ai_response=None, target_name=None, image_filename=None):
+                       question=None, ai_response=None, target_name=None, image_filename=None,
+                       response_lang=None):
     with get_cursor(commit=True) as cursor:
         cursor.execute("""
             INSERT INTO readings (user_name, category, card_name, meaning, orientation, group_id,
-                                   question, ai_response, target_name, image_filename)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                   question, ai_response, target_name, image_filename, response_lang)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (user_name, category, card_name, meaning, orientation, group_id,
-              question, ai_response, target_name, image_filename))
+              question, ai_response, target_name, image_filename, response_lang))
         return cursor.fetchone()[0]
 
 
@@ -258,12 +269,12 @@ def save_reading(user_name, category, card_name, meaning, orientation, group_id=
         return cursor.fetchone()[0]
 
 
-def save_oracle_story(user_name, group_id, story):
+def save_oracle_story(user_name, group_id, story, response_lang="en"):
     with get_cursor(commit=True) as cursor:
         cursor.execute("""
-            INSERT INTO oracle_stories (user_name, group_id, story)
-            VALUES (%s, %s, %s)
-        """, (user_name, group_id, story))
+            INSERT INTO oracle_stories (user_name, group_id, story, response_lang)
+            VALUES (%s, %s, %s, %s)
+        """, (user_name, group_id, story, response_lang))
 
 
 def get_readings(user_name, category):
@@ -372,7 +383,7 @@ def get_calendar_predictions(user_name, lang="en"):
     with get_cursor() as cursor:
         cursor.execute("""
             SELECT id, category, card_name, meaning, orientation, group_id,
-                   question, ai_response, target_name, image_filename, created_at
+                   question, ai_response, target_name, image_filename, created_at, response_lang
             FROM readings
             WHERE user_name = %s
             ORDER BY created_at DESC, id ASC
@@ -380,16 +391,16 @@ def get_calendar_predictions(user_name, lang="en"):
         rows = cursor.fetchall()
 
         cursor.execute("""
-            SELECT group_id, story FROM oracle_stories WHERE user_name = %s
+            SELECT group_id, story, response_lang FROM oracle_stories WHERE user_name = %s
         """, (user_name,))
-        oracle_stories = {row[0]: row[1] for row in cursor.fetchall()}
+        oracle_stories = {row[0]: (row[1], row[2] or "en") for row in cursor.fetchall()}
 
     seen_group_ids = set()
     predictions = []
 
     for row in rows:
         (reading_id, category, card_name, meaning, orientation, group_id,
-         question, ai_response, target_name, image_filename, created_at) = row
+         question, ai_response, target_name, image_filename, created_at, response_lang) = row
 
         if group_id and group_id in seen_group_ids:
             continue
@@ -401,11 +412,13 @@ def get_calendar_predictions(user_name, lang="en"):
                 {"label": r[1], "card_name": r[2], "meaning": r[3], "orientation": r[4], "image_filename": r[9]}
                 for r in siblings
             ]
+            oracle_story, oracle_lang = oracle_stories.get(group_id, (None, "en"))
             predictions.append({
                 "type": "oracle",
                 "id": reading_id,
                 "cards": cards,
-                "ai_response": oracle_stories.get(group_id),
+                "ai_response": oracle_story,
+                "response_lang": oracle_lang,
                 "created_at": created_at,
             })
 
@@ -421,6 +434,7 @@ def get_calendar_predictions(user_name, lang="en"):
                 "id": reading_id,
                 "cards": cards,
                 "ai_response": siblings[0][7] if siblings else None,
+                "response_lang": (siblings[0][11] if siblings else None) or "en",
                 "created_at": created_at,
             })
 
@@ -440,6 +454,7 @@ def get_calendar_predictions(user_name, lang="en"):
                 "cards": [{"card_name": card_name, "meaning": meaning, "orientation": orientation, "image_filename": image_filename}],
                 "question": question,
                 "ai_response": ai_response,
+                "response_lang": response_lang or "en",
                 "created_at": created_at,
             })
 
@@ -449,10 +464,11 @@ def get_calendar_predictions(user_name, lang="en"):
                 "id": reading_id,
                 "question": question,
                 "ai_response": ai_response,
+                "response_lang": response_lang or "en",
                 "created_at": created_at,
             })
 
-# Group predictions into: { "Month Year": { "Day Month Year": [pred1, pred2, ...] } }
+    # Group predictions into: { "Month Year": { "Day Month Year": [pred1, pred2, ...] } }
     calendar_data = {}
     for pred in predictions:
         dt = pred.get("created_at")
@@ -473,6 +489,7 @@ def get_calendar_predictions(user_name, lang="en"):
         calendar_data[month_key]["days"][day_num].append(pred)
 
     return calendar_data
+
 
 def get_calendar_data(user_name, lang="en"):
     """Bridge function that returns predictions structured for calendar.html"""

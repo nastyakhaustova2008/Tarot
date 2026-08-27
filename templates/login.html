@@ -19,6 +19,7 @@
         {% endif %}
 
         <form action="/login" method="POST">
+        {% include "partials/csrf_token.html" %}
             <label for="login_user_name">{{ t('name_label') }}</label>
             <input type="text" id="login_user_name" name="user_name" required>
 
@@ -41,6 +42,7 @@
         {% endif %}
 
         <form action="/register" method="POST">
+        {% include "partials/csrf_token.html" %}
             <label for="reg_user_name">{{ t('name_label') }}</label>
             <input type="text" id="reg_user_name" name="user_name" required>
 

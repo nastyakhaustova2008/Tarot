@@ -324,15 +324,19 @@
     <div class="section-label">// {{ t('draw_label') }}</div>
     <div>
         <form action="/draw/past" method="POST" style="display:inline" onsubmit="this.querySelector('button').disabled=true;">
+        {% include "partials/csrf_token.html" %}
             <button type="submit" class="button">{{ t('past') }}</button>
         </form>
         <form action="/draw/present" method="POST" style="display:inline" onsubmit="this.querySelector('button').disabled=true;">
+        {% include "partials/csrf_token.html" %}
             <button type="submit" class="button">{{ t('present') }}</button>
         </form>
         <form action="/draw/future" method="POST" style="display:inline" onsubmit="this.querySelector('button').disabled=true;">
+        {% include "partials/csrf_token.html" %}
             <button type="submit" class="button">{{ t('future') }}</button>
         </form>
         <form action="/draw/oracle" method="POST" style="display:inline" onsubmit="this.querySelector('button').disabled=true;">
+        {% include "partials/csrf_token.html" %}
             <button type="submit" class="button">{{ t('oracle') }}</button>
         </form>
         <button type="button" onclick="openModal('modalYesNo')">{{ t('ask_yes_no') }}</button>
@@ -357,6 +361,7 @@
         <div class="modal-content">
             <h3>{{ t('ask_yes_no') }}</h3>
             <form action="/draw_yes_no" method="POST">
+        {% include "partials/csrf_token.html" %}
                 <input type="text" name="question" placeholder="{{ t('type_your_question') }}" required>
                 <div>
                     <button type="submit">{{ t('submit') }}</button>
@@ -370,6 +375,7 @@
         <div class="modal-content">
             <h3>{{ t('ask_question') }}</h3>
             <form action="/ask_question" method="POST">
+        {% include "partials/csrf_token.html" %}
                 <input type="text" name="question" placeholder="{{ t('type_your_question') }}" required>
                 <div>
                     <button type="submit">{{ t('submit') }}</button>
@@ -383,6 +389,7 @@
         <div class="modal-content">
             <h3>{{ t('prediction_for_two') }}</h3>
             <form action="/prediction_two" method="POST">
+        {% include "partials/csrf_token.html" %}
                 <input type="text" name="name1" placeholder="{{ t('enter_name_1') }}" required>
                 <input type="text" name="name2" placeholder="{{ t('enter_name_2') }}" required>
                 <div>
@@ -411,7 +418,7 @@
         </div>
         {% include "partials/oracle_story.html" %}
         <div class="share-btn-wrap">
-            <script type="application/json" id="captionQuestion">{{ ((session.get('last_question_asked') or '') ~ (('\n\n' ~ story) if story else ''))|tojson }}</script>
+            <script type="application/json" id="captionQuestion">{{ ((session.get('last_question_asked') or '') ~ ('\n\n' ~ tr(story) if story else ''))|tojson }}</script>
             <button type="button" class="button share-btn"
                 data-share-image="shareQuestionCard"
                 data-share-caption-src="captionQuestion"
@@ -443,7 +450,7 @@
     {% if oracle %}
     <div class="share-btn-wrap">
         <!-- Oracle / Prediction-for-two: screenshot is only the cards; the AI text rides along as the share caption, never drawn on the image -->
-        <script type="application/json" id="captionOracle">{{ (story or '')|tojson }}</script>
+        <script type="application/json" id="captionOracle">{{ (tr(story) or '')|tojson }}</script>
         <button type="button" class="button share-btn"
             data-share-image="{{ row_id }}"
             data-share-caption-src="captionOracle"

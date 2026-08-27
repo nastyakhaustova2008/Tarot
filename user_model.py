@@ -169,7 +169,7 @@ class User():
             self.future.append(card)
             print(card.give_card())
 
-    def get_oracle(self):
+    def get_oracle(self, lang="en"):
         """Fetches 3 cards (past/present/future) and generates the AI story.
         Does NOT save anything to the database — app.py's /draw route (oracle
         branch) is responsible for saving all 3 cards + the story, so nothing
@@ -202,5 +202,5 @@ class User():
             card3 = Card(card_name3, meaning3, random_meaning3)
             self.future.append(card3)
 
-            story = generate_oracle_story(meaning1, meaning2, meaning3, lang="en")
+            story = generate_oracle_story(meaning1, meaning2, meaning3, lang=lang)
             self.oracle_story = story

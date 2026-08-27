@@ -31,7 +31,7 @@
             <p style="margin-bottom: 10px; color: #e0a458;"><em>"{{ session['last_question_asked'] }}"</em></p>
         {% endif %}
 
-        {{ tr(story) }}
+        {{ tr_story(story, session.get('last_story_lang', 'en')) }}
     </div>
 </div>
 {% endif %}

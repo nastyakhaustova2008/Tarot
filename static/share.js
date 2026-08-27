@@ -56,6 +56,38 @@ function downloadBlob(blob, filename) {
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
 
+
+function copyCaptionSafely(text) {
+    if (text && navigator.clipboard) {
+        navigator.clipboard.writeText(text).catch(function () {});
+    }
+}
+
+var t_share_toast_msg = document.documentElement.lang === "ru"
+    ? "Текст скопирован — вставьте его, если он не пришёл сам"
+    : (document.documentElement.lang === "he"
+        ? "הטקסט הועתק — הדבק אותו אם הוא לא הגיע"
+        : (document.documentElement.lang === "uk"
+            ? "Текст скопійовано — вставте його, якщо він не прийшов сам"
+            : "Caption copied — paste it if it didn't arrive with the image"));
+
+function showShareToast(msg) {
+    var toast = document.createElement("div");
+    toast.textContent = msg;
+    toast.style.cssText =
+        "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);" +
+        "background:#0a1412;color:#39ffb0;border:1px solid #39ffb0;padding:10px 18px;" +
+        "border-radius:6px;font-family:'Share Tech Mono',monospace;font-size:0.85em;" +
+        "z-index:9999;box-shadow:0 0 12px rgba(57,255,176,0.4);pointer-events:none;";
+    document.body.appendChild(toast);
+    setTimeout(function () {
+        toast.style.transition = "opacity 0.4s ease";
+        toast.style.opacity = "0";
+        setTimeout(function () { toast.remove(); }, 400);
+    }, 2600);
+}
+
+
 /**
  * Downloads the image and, if there's caption text, copies it to the
  * clipboard too. This is the ONLY fallback used after a file-share
@@ -85,6 +117,15 @@ function shareImageBlob(blob, filename, text) {
             files: [file],
             text: text || undefined,
             title: "Taro"
+        }).then(function () {
+            // Many share targets (WhatsApp on Android especially) silently
+            // drop `text` when `files` is also attached — no error is thrown,
+            // the file just arrives without a caption. Copy the text to the
+            // clipboard too, every time, as a safety net either way.
+            if (text) {
+                copyCaptionSafely(text);
+                showShareToast(t_share_toast_msg);
+            }
         }).catch(function (err) {
             console.error("[share debug] navigator.share (files) failed:", err.name, err.message);
             // Do NOT call navigator.share() again here — the gesture is gone.

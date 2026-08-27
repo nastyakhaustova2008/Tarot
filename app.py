@@ -12,11 +12,12 @@ import random
 from datetime import datetime, timedelta
 import re
 from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_wtf import CSRFProtect
 
 import database as Tarot_database
 from exceptions import TarotAPIError
 from user_model import User
-from i18n import t, tr, TRANSLATIONS
+from i18n import t, tr, tr_story, prefetch_translations, TRANSLATIONS
 from tarot_ai import generate_oracle_story  # noqa: F401 (kept for parity with original imports)
 from i18n import translate_meaning
 from translations import MONTHS
@@ -26,8 +27,9 @@ load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 app = Flask(__name__)
-app.secret_key = "change_this_to_something_random"
+app.secret_key = os.environ["FLASK_SECRET_KEY"]
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+csrf = CSRFProtect(app)
 
 # ---------------------------------------------------------------
 # Account / login-security settings
@@ -57,6 +59,7 @@ def render_note(note_text, note_image, image_position):
 app.jinja_env.globals["render_note"] = render_note
 app.jinja_env.globals["t"] = t
 app.jinja_env.globals["tr"] = tr
+app.jinja_env.globals["tr_story"] = tr_story
 
 
 HOMOGLYPH_MAP = {
@@ -97,6 +100,22 @@ def home():
     if session.get("last_oracle"):
         oracle = list(zip(session["last_oracle"], session["last_oracle_labels"]))
 
+    # Warm the translation cache for everything this page needs, all at
+    # once, instead of letting each card's name/meaning translate one
+    # at a time as the template renders.
+    texts_to_prefetch = []
+    if card:
+        texts_to_prefetch += [card["card_name"], card["meaning"]]
+    if oracle:
+        for oracle_card, _ in oracle:
+            texts_to_prefetch += [oracle_card["card_name"], oracle_card["meaning"]]
+    prefetch_translations(texts_to_prefetch)
+
+    last_story_lang = session.get("last_story_lang", "en")
+    current_lang = session.get("lang", "en")
+    if story and current_lang != last_story_lang:
+        prefetch_translations([story], lang=current_lang, assume_source_english=False)
+
     return render_template("home.html", card=card, category=category, oracle=oracle, story=story)
 
 
@@ -129,7 +148,7 @@ def register():
         return fail("Password must be at least 4 characters long.")
 
     if Tarot_database.get_user(user_name):
-        return fail("This username is already taken. Please choose another one.")
+        return fail("Could not register with that username. Please choose another one or reset your password if it's yours.")
 
     password_hash = generate_password_hash(password)
     Tarot_database.create_user(user_name, password_hash, gender, email)
@@ -220,7 +239,7 @@ def login():
 
     user_row = Tarot_database.get_user(user_name)
     if not user_row:
-        session["login_error"] = "No account found with that username. Please register first."
+        session["login_error"] = "Incorrect username or password."
         return redirect("/")
 
     _, password_hash, gender, failed_attempts, locked_until, email = user_row
@@ -250,7 +269,7 @@ def login():
         else:
             Tarot_database.record_failed_login(user_name, failed_attempts, None)
             remaining = MAX_LOGIN_ATTEMPTS - failed_attempts
-            session["login_error"] = f"Incorrect password. {remaining} attempt(s) remaining."
+            session["login_error"] = f"Incorrect username or password. {remaining} attempt(s) remaining."
         return redirect("/")
 
     # Success — gender comes from the DB, never re-entered
@@ -329,7 +348,7 @@ def draw(category):
             return redirect("/")
 
         elif category == "oracle":
-            me.get_oracle()
+            me.get_oracle(lang=session.get("lang", "en"))
             oracle = [
                 (me.past[-1], "past"),
                 (me.present[-1], "present"),
@@ -342,7 +361,10 @@ def draw(category):
                     session["user_name"], label, card.card_name, card.meaning, card.orientation,
                     group_id=gid, image_filename=card.image_filename
                 )
-            Tarot_database.save_oracle_story(session["user_name"], gid, me.oracle_story)
+            Tarot_database.save_oracle_story(
+                session["user_name"], gid, me.oracle_story,
+                response_lang=session.get("lang", "en")
+            )
 
             session["last_oracle"] = [
                 {
@@ -355,6 +377,7 @@ def draw(category):
             ]
             session["last_oracle_labels"] = [label for card, label in oracle]
             session["last_story"] = me.oracle_story
+            session["last_story_lang"] = session.get("lang", "en")
             session["last_card"] = None
             session["last_category"] = None
             return redirect("/")
@@ -410,7 +433,19 @@ def note(reading_id):
 
         uploaded = request.files.get("note_image")
         if uploaded and uploaded.filename:
-            note_image = "data:" + uploaded.mimetype + ";base64," + base64.b64encode(uploaded.read()).decode("utf-8")
+            ALLOWED_NOTE_IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp"}
+            MAX_NOTE_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB
+
+            if uploaded.mimetype not in ALLOWED_NOTE_IMAGE_TYPES:
+                session["note_error"] = "Only PNG, JPEG, or WebP images are allowed."
+                return redirect(next_url)
+
+            image_bytes = uploaded.read(MAX_NOTE_IMAGE_BYTES + 1)
+            if len(image_bytes) > MAX_NOTE_IMAGE_BYTES:
+                session["note_error"] = "Image is too large (max 5 MB)."
+                return redirect(next_url)
+
+            note_image = "data:" + uploaded.mimetype + ";base64," + base64.b64encode(image_bytes).decode("utf-8")
 
         if request.form.get("remove_image") == "1":
             note_image = None
@@ -484,7 +519,8 @@ def ask_question():
         card.orientation,
         question=question,
         ai_response=ai_answer,
-        image_filename=card.image_filename
+        image_filename=card.image_filename,
+        response_lang=lang
 
     )
 
@@ -498,6 +534,7 @@ def ask_question():
     session["last_oracle"] = None
     session["last_oracle_labels"] = None
     session["last_story"] = ai_answer
+    session["last_story_lang"] = lang
     session["last_question_asked"] = question
 
     return redirect("/")
@@ -528,12 +565,14 @@ def prediction_two():
     Tarot_database.save_reading_full(
         session["user_name"], "two_person", card1.card_name, card1.meaning,
         card1.orientation, group_id=gid, question=f"{name1} & {name2}",
-        ai_response=ai_story, target_name=name1, image_filename=card1.image_filename
+        ai_response=ai_story, target_name=name1, image_filename=card1.image_filename,
+        response_lang=lang
     )
     Tarot_database.save_reading_full(
         session["user_name"], "two_person", card2.card_name, card2.meaning,
         card2.orientation, group_id=gid, question=f"{name1} & {name2}",
-        ai_response=ai_story, target_name=name2, image_filename=card2.image_filename
+        ai_response=ai_story, target_name=name2, image_filename=card2.image_filename,
+        response_lang=lang
     )
 
     session["last_oracle"] = [
@@ -542,6 +581,7 @@ def prediction_two():
     ]
     session["last_oracle_labels"] = [name1, name2]
     session["last_story"] = ai_story
+    session["last_story_lang"] = lang
     session["last_card"] = None
     session["last_category"] = "prediction"
     session["last_question_asked"] = None
@@ -592,21 +632,26 @@ def calendar_view():
     month_entry = raw_calendar_data.get(selected_key)
     days = month_entry['days'] if month_entry else {}
 
-    if current_lang != 'en' and days:
+    if days:
         for day_num, predictions in days.items():
             if not isinstance(predictions, list):
                 continue
             for pred in predictions:
                 if not isinstance(pred, dict):
                     continue
-                if pred.get('ai_response') and isinstance(pred['ai_response'], str):
-                    pred['ai_response'] = translate_meaning(pred['ai_response'], current_lang)
-                if pred.get('question') and isinstance(pred['question'], str):
+                # ai_response was generated in whatever language was active
+                # at the time — never assume it's already English.
+                response_lang = pred.get('response_lang') or 'en'
+                if pred.get('ai_response') and isinstance(pred['ai_response'], str) and response_lang != current_lang:
+                    pred['ai_response'] = translate_meaning(pred['ai_response'], current_lang, assume_source_english=False)
+                if current_lang != 'en' and pred.get('question') and isinstance(pred['question'], str):
                     pred['question'] = translate_meaning(pred['question'], current_lang)
                 cards = pred.get('cards')
                 if isinstance(cards, list):
                     for card in cards:
-                        if isinstance(card, dict) and card.get('meaning') and isinstance(card['meaning'], str):
+                        # Card meanings always come from tarotapi.dev in
+                        # English, so the "en" shortcut is correct here.
+                        if isinstance(card, dict) and card.get('meaning') and isinstance(card['meaning'], str) and current_lang != 'en':
                             card['meaning'] = translate_meaning(card['meaning'], current_lang)
 
     months_table = MONTHS.get(current_lang, MONTHS['en'])
@@ -648,3 +693,7 @@ def history_view():
 if __name__ == "__main__":
     Tarot_database.create_table()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
+
+
+

@@ -1,160 +1,407 @@
-<!DOCTYPE html>
-<html lang="{{ session.get('lang', 'en') }}" dir="{{ 'rtl' if session.get('lang') == 'he' else 'ltr' }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taro - {{ t('note_label') }}</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-        * { box-sizing: border-box; }
+{% extends "base.html" %}
 
-        body {
-            background-color: #05080a;
-            color: #b6ffe0;
-            font-family: 'Share Tech Mono', monospace;
-            text-align: center;
-            padding: 40px 20px;
-            min-height: 100vh;
-        }
+{% block decor %}{% include "partials/decor_note.html" %}{% endblock %}
 
-        h1 {
-            font-size: 1.8em;
-            letter-spacing: 4px;
-            color: #39ffb0;
-            text-shadow: 0 0 5px #39ffb0, 0 0 20px #17d9a3;
-            margin-bottom: 25px;
-        }
+{% block title %}Taro - {{ t('note_label') }}{% endblock %}
 
-        form {
-            max-width: 500px;
-            margin: 0 auto;
-            text-align: left;
-        }
+{% block extra_style %}{% include "partials/note_theme.html" %}{% endblock %}
 
-        html[dir="rtl"] form { text-align: right; }
-
-        textarea {
-            width: 100%;
-            min-height: 180px;
-            padding: 10px;
-            border-radius: 4px;
-            border: 1px solid #1f5b45;
-            background: rgba(0, 20, 15, 0.5);
-            color: #d9fff0;
-            font-family: 'Share Tech Mono', monospace;
-            resize: vertical;
-        }
-
-        #char-count {
-            text-align: right;
-            font-size: 0.75em;
-            color: #6b8f83;
-            margin-top: 4px;
-        }
-        html[dir="rtl"] #char-count { text-align: left; }
-
-        .current-image {
-            margin-top: 15px;
-            text-align: center;
-        }
-
-        .current-image img {
-            max-width: 200px;
-            border-radius: 4px;
-            border: 1px solid #39ffb0;
-        }
-
-        label {
-            display: block;
-            margin-top: 15px;
-            font-size: 0.85em;
-            letter-spacing: 1px;
-            color: #b3c9c0;
-            text-transform: uppercase;
-        }
-
-        input[type="file"] {
-            margin-top: 6px;
-            color: #b3c9c0;
-            font-family: 'Share Tech Mono', monospace;
-        }
-
-        button, a.button {
-            display: inline-block;
-            background: transparent;
-            color: #39ffb0;
-            border: 1px solid #39ffb0;
-            text-decoration: none;
-            padding: 10px 20px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.85em;
-            letter-spacing: 1px;
-            border-radius: 2px;
-            cursor: pointer;
-            margin: 15px 8px 0 0;
-        }
-        button:hover, a.button:hover { border-color: #e0a458; color: #e0a458; }
-
-        .checkbox-row {
-            margin-top: 8px;
-            font-size: 0.85em;
-            color: #c9e8dd;
-        }
-    </style>
-</head>
-<body>
+{% block content %}
     <h1>{{ t('note_label') }}</h1>
 
-    <div style="margin-bottom: 15px;">
-        <a href="/set_language/en?next={{ request.path }}" class="button">EN</a>
-        <a href="/set_language/he?next={{ request.path }}" class="button">עב</a>
-        <a href="/set_language/uk?next={{ request.path }}" class="button">УК</a>
+    <!-- Context Metadata Banner with Translation Keys -->
+    <div class="note-context-meta">
+        {% if meta_info.target_name %}
+            <span class="meta-item"><strong>{{ t('person_label') }}:</strong> {{ meta_info.target_name }}</span>
+        {% endif %}
+        {% if meta_info.question %}
+            <span class="meta-item"><strong>{{ t('question_label') }}:</strong> {{ meta_info.question }}</span>
+        {% endif %}
+        {% if meta_info.card_name and meta_info.card_name != 'Yes / No' %}
+            <span class="meta-item"><strong>{{ t('card_label') }}:</strong> {{ meta_info.card_name }}</span>
+        {% endif %}
+        <span class="meta-item meta-category">({{ t('cat_' ~ meta_info.category) }})</span>
     </div>
+
+    <style>
+    .note-context-meta {
+        margin: -5px auto 20px auto;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        color: #8bbfae;
+        letter-spacing: 0.5px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+        max-width: 600px;
+        text-shadow: 0 0 6px rgba(46, 230, 166, 0.2);
+    }
+
+    .note-context-meta .meta-item strong {
+        color: #2ee6a6;
+    }
+
+    .note-context-meta .meta-category {
+        color: #537568;
+        font-style: italic;
+    }
+
+    .action-row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+        margin-top: 12px;
+        width: 100%;
+    }
+
+    .taro-file-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+        font-family: 'Courier New', monospace;
+        padding: 18px 0 6px 0;
+        margin-left: -6px;
+    }
+
+    .taro-file-input { display: none; }
+
+    .taro-log-btn {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        user-select: none;
+        filter: drop-shadow(0 0 4px rgba(46, 230, 166, 0.15));
+        transition: filter 0.25s ease;
+    }
+
+    .taro-log-btn:hover {
+        filter: drop-shadow(0 0 10px rgba(46, 230, 166, 0.45));
+    }
+
+    .taro-log-svg {
+        width: 170px;
+        height: 62px;
+        overflow: visible;
+        display: block;
+    }
+
+    .taro-log-bg .bark {
+        fill: rgba(15, 25, 18, 0.75);
+        stroke: #2ee6a6;
+        stroke-width: 1.4;
+    }
+
+    .taro-log-label {
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        letter-spacing: 1.5px;
+        fill: #cdeee0;
+        text-transform: uppercase;
+        text-anchor: middle;
+        dominant-baseline: middle;
+        direction: rtl;
+        pointer-events: none;
+    }
+
+    html[dir="ltr"] .taro-log-label,
+    html:not([dir]) .taro-log-label {
+        direction: ltr;
+        text-transform: uppercase;
+    }
+
+    .taro-mushroom {
+        position: absolute;
+        pointer-events: none;
+    }
+    .taro-mushroom.m1 { top: -30px; left: 18px; width: 38px; }
+    .taro-mushroom.m2 { top: -20px; left: 48px; width: 24px; opacity: 0.9; }
+    .taro-mushroom.m3 { top: -26px; right: 14px; width: 32px; }
+
+    .taro-mushroom .cap { fill: #b06a3a; }
+    .taro-mushroom .stem { fill: #e7d9b8; }
+    .taro-mushroom .spot { fill: #f2e6c9; }
+
+    /* Preview Wrap with Relative Positioning for Delete Badge */
+    #file-preview-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        margin-top: 14px;
+    }
+
+    /* Thumbnail Preview Styling */
+    .image-preview-thumb {
+        max-height: 52px;
+        max-width: 90px;
+        border: 1px solid #2ee6a6;
+        border-radius: 4px;
+        object-fit: cover;
+        box-shadow: 0 0 8px rgba(46, 230, 166, 0.3);
+        vertical-align: middle;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .image-preview-thumb:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 12px rgba(46, 230, 166, 0.6);
+    }
+
+    /* Red 'X' Delete Badge */
+    .delete-img-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 20px;
+        height: 20px;
+        background: #3d220a;
+        color: #ffffff;
+        border: 1px solid #05080a;
+        border-radius: 50%;
+        font-size: 13px;
+        font-weight: bold;
+        line-height: 18px;
+        text-align: center;
+        cursor: pointer;
+        user-select: none;
+        box-shadow: 0 0 6px rgba(255, 71, 87, 0.6);
+        transition: background 0.2s ease, transform 0.2s ease;
+        z-index: 10;
+    }
+
+    .delete-img-btn:hover {
+        background: #593312;
+        transform: scale(1.15);
+    }
+
+    .button-group {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 16px !important;
+        margin-top: 10px;
+        width: 100%;
+    }
+
+    .button-group button,
+    .button-group a.button {
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        letter-spacing: 1px;
+        background: rgba(10, 20, 15, 0.6);
+        border: 1px solid #2ee6a6;
+        color: #cdeee0;
+        padding: 0 24px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s ease, box-shadow 0.2s ease;
+        margin: 0 !important;
+        height: 42px !important;
+        box-sizing: border-box;
+        line-height: 1;
+    }
+
+    .button-group button:hover,
+    .button-group a.button:hover {
+        background: rgba(46, 230, 166, 0.1);
+        box-shadow: 0 0 8px rgba(46, 230, 166, 0.4);
+    }
+
+    /* Lightbox Modal Overlay */
+    .lightbox-modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(5, 10, 8, 0.88);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .lightbox-modal img {
+        max-width: 90vw;
+        max-height: 85vh;
+        border: 2px solid #2ee6a6;
+        border-radius: 6px;
+        box-shadow: 0 0 25px rgba(46, 230, 166, 0.4);
+        cursor: default;
+    }
+    </style>
 
     <form method="POST" enctype="multipart/form-data" id="note-form">
         <textarea name="note_text" id="note_text" maxlength="6000" placeholder="...">{{ reading[6] or '' }}</textarea>
         <div id="char-count">0 / 6000</div>
 
+        <!-- Hidden inputs for image state management -->
+        <input type="hidden" name="remove_image" id="remove_image_input" value="0">
         {% if reading[7] %}
-        <div class="current-image">
-            <img src="{{ reading[7] }}" alt="note image">
-            <div class="checkbox-row">
-                <label><input type="checkbox" name="remove_image" value="1"> {{ t('remove_image') }}</label>
-            </div>
+        <div class="current-image" id="existing-img-container" style="display: none;">
             <input type="hidden" name="keep_existing_image" value="1">
         </div>
         {% endif %}
 
-        <label for="note_image_input">{{ t('add_image') }}</label>
-        <input type="file" name="note_image" id="note_image_input" accept="image/*">
+        <div class="action-row">
+            <div class="taro-file-wrap">
+                <label class="taro-log-btn" for="taro-file-input">
+                    <svg class="taro-log-svg" viewBox="0 0 210 78">
+                        <g class="taro-log-bg">
+                            <rect class="bark" x="1" y="1" width="208" height="76" rx="6"></rect>
+                        </g>
+                        <text class="taro-log-label" x="105" y="41">{{ t('choose_file') }}</text>
+                    </svg>
 
-        <input type="hidden" name="image_position" id="image_position" value="{{ reading[8] if reading[8] is not none else '' }}">
-        <div>
-            <button type="button" id="mark-position-btn">{{ t('insert_image_here') }}</button>
-        </div>
+                    <svg class="taro-mushroom m1" viewBox="0 0 24 24">
+                        <path class="cap" d="M2 12 C2 5 22 5 22 12 Z"></path>
+                        <circle class="spot" cx="8" cy="9" r="1.6"></circle>
+                        <circle class="spot" cx="16" cy="8.5" r="1.3"></circle>
+                        <rect class="stem" x="10" y="12" width="4" height="8" rx="1.5"></rect>
+                    </svg>
 
-        <div>
-            <button type="submit">{{ t('save') }}</button>
-            <a class="button" href="/history/{{ reading[1] }}">{{ t('cancel') }}</a>
+                    <svg class="taro-mushroom m2" viewBox="0 0 24 24">
+                        <path class="cap" d="M2 12 C2 5 22 5 22 12 Z"></path>
+                        <rect class="stem" x="10" y="12" width="4" height="8" rx="1.5"></rect>
+                    </svg>
+
+                    <svg class="taro-mushroom m3" viewBox="0 0 24 24">
+                        <path class="cap" d="M2 12 C2 5 22 5 22 12 Z"></path>
+                        <circle class="spot" cx="12" cy="8.5" r="1.4"></circle>
+                        <rect class="stem" x="10" y="12" width="4" height="8" rx="1.5"></rect>
+                    </svg>
+                </label>
+
+                <input
+                    type="file"
+                    name="note_image"
+                    id="taro-file-input"
+                    class="taro-file-input"
+                    accept="image/*"
+                    onchange="handleImagePreview(this)"
+                >
+
+                <!-- Thumbnail Container with Delete Badge -->
+                <div id="file-preview-wrap">
+                    <img 
+                        src="{{ reading[7] or '' }}" 
+                        class="image-preview-thumb" 
+                        id="img-preview" 
+                        style="display: {{ 'inline-block' if reading[7] else 'none' }};" 
+                        alt="preview"
+                        onclick="openLightbox()"
+                    >
+                    <div 
+                        class="delete-img-btn" 
+                        id="delete-img-btn" 
+                        style="display: {{ 'block' if reading[7] else 'none' }};"
+                        onclick="deleteImage()" 
+                        title="Remove image"
+                    >×</div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="submit">{{ t('save') }}</button>
+                <a class="button" href="/history/{{ reading[1] }}">{{ t('cancel') }}</a>
+            </div>
         </div>
     </form>
 
+    <!-- Lightbox Modal for Enlarged View -->
+    <div class="lightbox-modal" id="lightbox-modal" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" alt="Enlarged preview">
+    </div>
+
     <script>
         const textarea = document.getElementById('note_text');
-        const posField = document.getElementById('image_position');
-        const markBtn = document.getElementById('mark-position-btn');
         const charCount = document.getElementById('char-count');
+        const preview = document.getElementById('img-preview');
+        const deleteBtn = document.getElementById('delete-img-btn');
+        const fileInput = document.getElementById('taro-file-input');
+        const removeImageInput = document.getElementById('remove_image_input');
+        const lightboxModal = document.getElementById('lightbox-modal');
+        const lightboxImg = document.getElementById('lightbox-img');
+        const readingId = "{{ reading[0] }}";
 
         function updateCount() {
             charCount.textContent = textarea.value.length + ' / 6000';
         }
-        textarea.addEventListener('input', updateCount);
+        
+        textarea.addEventListener('input', function() {
+            updateCount();
+            sessionStorage.setItem('draft_note_' + readingId, textarea.value);
+        });
         updateCount();
 
-        markBtn.addEventListener('click', function () {
-            posField.value = textarea.selectionStart;
-            markBtn.textContent = "{{ t('image_position_set') }}";
+        // Restore draft text & image if user switched language without saving
+        window.addEventListener('DOMContentLoaded', function() {
+            const savedText = sessionStorage.getItem('draft_note_' + readingId);
+            if (savedText !== null && textarea.value === '') {
+                textarea.value = savedText;
+                updateCount();
+            }
+
+            const savedImg = sessionStorage.getItem('draft_img_' + readingId);
+            if (savedImg && !preview.src) {
+                preview.src = savedImg;
+                preview.style.display = 'inline-block';
+                deleteBtn.style.display = 'block';
+            }
+        });
+
+        // Handle uploaded image preview & save to draft storage
+        function handleImagePreview(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'inline-block';
+                    deleteBtn.style.display = 'block';
+                    removeImageInput.value = '0';
+                    sessionStorage.setItem('draft_img_' + readingId, e.target.result);
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Delete image handler
+        function deleteImage() {
+            fileInput.value = '';
+            preview.src = '';
+            preview.style.display = 'none';
+            deleteBtn.style.display = 'none';
+            removeImageInput.value = '1';
+            sessionStorage.removeItem('draft_img_' + readingId);
+        }
+
+        // Lightbox enlarged view functions   background
+        function openLightbox() {
+            if (preview.src && preview.style.display !== 'none') {
+                lightboxImg.src = preview.src;
+                lightboxModal.style.display = 'flex';
+            }
+        }
+
+        function closeLightbox() {
+            lightboxModal.style.display = 'none';
+        }
+
+        // Clear draft memory when form is submitted
+        document.getElementById('note-form').addEventListener('submit', function() {
+            sessionStorage.removeItem('draft_note_' + readingId);
+            sessionStorage.removeItem('draft_img_' + readingId);
         });
     </script>
-</body>
-</html>
+{% endblock %}

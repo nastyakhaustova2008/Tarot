@@ -243,6 +243,7 @@
     </style>
 
     <form method="POST" enctype="multipart/form-data" id="note-form">
+        {% include "partials/csrf_token.html" %}
         <textarea name="note_text" id="note_text" maxlength="6000" placeholder="...">{{ reading[6] or '' }}</textarea>
         <div id="char-count">0 / 6000</div>
 
